@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Timer, ChevronDown, CheckCircle } from 'lucide-react';
 
 interface CleaverViewProps {
   testData: any;
@@ -157,24 +158,32 @@ export default function CleaverView({ testData, onComplete }: CleaverViewProps) 
     }
 
     isSubmittedRef.current = true;
-    onComplete(userAnswersRef.current);
+    // Si el guardado falla en el resolver, se rehabilita y permite reintentar
+    Promise.resolve(onComplete(userAnswersRef.current))
+      .catch(() => {
+        isSubmittedRef.current = false;
+      });
   }, [allQuestions, onComplete]);
 
   // Manejo del temporizador y auto-envío al llegar a 0
+  // El conteo solo decrece; la finalización se dispara en un efecto separado
+  // para evitar efectos secundarios dentro del updater de estado.
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleFinish(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+    if (isSubmittedRef.current || timeLeft <= 0) return;
+
+    const timeout = setTimeout(() => {
+      setTimeLeft((prev) => (prev > 1 ? prev - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [handleFinish]);
+    return () => clearTimeout(timeout);
+  }, [timeLeft, isSubmittedRef]);
+
+  // Auto-finalización cuando el tiempo llega a 0 en la última serie
+  useEffect(() => {
+    if (timeLeft === 0 && allQuestions.length > 0) {
+      handleFinish(true);
+    }
+  }, [timeLeft, handleFinish, allQuestions]);
 
   const handleSelect = (questionId: string, type: 'mas' | 'menos', optionValue: any) => {
     setUserAnswers((prev) => {
@@ -225,7 +234,7 @@ export default function CleaverView({ testData, onComplete }: CleaverViewProps) 
             {testData?.name || "Test de Cleaver"}
           </h1>
           <div className="flex items-center gap-3 px-4 py-2 bg-[#f0f5f7] rounded-xl border border-slate-200">
-            <span className="material-symbols-outlined text-[#001E28]">timer</span>
+            <Timer className="text-[#001E28]" size={20} aria-hidden="true" />
             <span className="font-headline font-bold text-lg text-[#001E28] tracking-wider">
               {formatTime(timeLeft)}
             </span>
@@ -277,9 +286,7 @@ export default function CleaverView({ testData, onComplete }: CleaverViewProps) 
                                 <span className="hover:text-[#416912] transition-colors underline decoration-dotted underline-offset-4">
                                   {label}
                                 </span>
-                                <span className="material-symbols-outlined text-xs text-slate-400 group-open:rotate-180 transition-transform">
-                                  expand_more
-                                </span>
+                                <ChevronDown className="text-slate-400 group-open:rotate-180 transition-transform" size={16} aria-hidden="true" />
                               </summary>
                               <p className="text-xs text-slate-500 mt-2 pl-2 border-l-2 border-[#416912]/40 font-normal leading-relaxed">
                                 {definition}
@@ -333,7 +340,7 @@ export default function CleaverView({ testData, onComplete }: CleaverViewProps) 
             className="flex items-center gap-2 px-8 py-4 rounded-xl font-headline font-bold hover:bg-[#34540e] transition-all duration-150 shadow-lg text-lg uppercase tracking-wider cursor-pointer"
           >
             <span>Finalizar Evaluación</span>
-            <span className="material-symbols-outlined">check_circle</span>
+            <CheckCircle size={20} aria-hidden="true" />
           </button>
         </div>
       </main>

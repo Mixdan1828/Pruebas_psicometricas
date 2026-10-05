@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getHomeRouteForRole } from '@/lib/utils/roles';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -69,10 +70,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/pending-approval', origin));
   }
 
-  // 7. Redirigir inteligentemente según el rol asignado
-  if (profile?.role === 'admin') {
-    return NextResponse.redirect(new URL('/dashboard/admin', origin));
-  }
-
-  return NextResponse.redirect(new URL('/dashboard/aplicador_de_pruebas', origin));
+  // 7. Redirigir inteligentemente según el rol asignado.
+  //    Usamos el mismo helper que /login y proxy.ts para que el mapeo
+  //    rol -> ruta sea consistente en toda la app.
+  const homeRoute = getHomeRouteForRole(profile?.role);
+  return NextResponse.redirect(new URL(homeRoute, origin));
 }

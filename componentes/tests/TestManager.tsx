@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import TestFinalizedView from './TestFinalizedView';
 import CleaverView from './CleaverView';
 import TermanView from './termanView'; // Asegúrate de importar tus vistas
+import Nom035IntegralView from './Nom035IntegralView';
 
 interface TestItem {
   id: string;
@@ -82,6 +83,16 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
     if (testIdentifier.includes('terman') || testIdentifier.includes('merrill')) {
       return (
         <TermanView 
+          testData={currentTest} 
+          onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 
+        />
+      );
+    }
+
+    // NOM-035 Integral (Guías I, II y III - 137 preguntas)
+    if (testIdentifier.includes('nom-035') || testIdentifier.includes('nom035') || testIdentifier.includes('integral')) {
+      return (
+        <Nom035IntegralView 
           testData={currentTest} 
           onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 
         />
