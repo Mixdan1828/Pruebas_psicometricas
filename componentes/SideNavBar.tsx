@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import type { UserRole } from '@/lib/utils/roles';
 import {
   History,
   Users,
@@ -16,8 +17,6 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-
-type UserRole = 'admin' | 'aplicador';
 
 interface NavItem {
   href: string;

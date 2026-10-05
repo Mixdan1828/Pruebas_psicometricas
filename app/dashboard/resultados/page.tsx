@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -143,7 +143,7 @@ function posicionRango(score: unknown): number {
   return Math.min(100, Math.max(0, num));
 }
 
-export default function DetalleCandidato() {
+function DetalleCandidatoContent() {
   const searchParams = useSearchParams();
   const candidateId = searchParams.get("id");
 
@@ -779,5 +779,23 @@ function InfoItem({
         <p className="mt-0.5 font-medium text-slate-800 break-words">{valor}</p>
       </div>
     </div>
+  );
+}
+// Envoltorio con Suspense: `useSearchParams()` en DetalleCandidatoContent requiere
+// un límite de Suspense durante el prerender estático (fallo de `next build` en Vercel).
+export default function DetalleCandidato() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa]">
+          <Loader2 className="animate-spin text-[#0d313f]" size={36} />
+          <p className="ml-3 text-sm font-medium text-slate-500">
+            Cargando expediente del candidato...
+          </p>
+        </div>
+      }
+    >
+      <DetalleCandidatoContent />
+    </Suspense>
   );
 }

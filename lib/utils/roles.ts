@@ -9,7 +9,18 @@
  *  - 'admin'      -> /dashboard/admin
  *  - 'aplicador'  -> /dashboard/aplicador_de_pruebas
  */
-export const ROLE_HOME_ROUTES: Record<string, string> = {
+/**
+ * Roles válidos de la plataforma. Provienen del enum `user_role` de Supabase
+ * (ver `lib/supabase/database.ts`). Única fuente de verdad para tipar roles.
+ */
+export type UserRole = 'admin' | 'aplicador';
+
+/**
+ * Listado explícito de roles válidos en la plataforma.
+ */
+export const USER_ROLES: readonly UserRole[] = ['admin', 'aplicador'];
+
+export const ROLE_HOME_ROUTES: Record<UserRole, string> = {
   admin: '/dashboard/admin',
   aplicador: '/dashboard/aplicador_de_pruebas',
   // Ejemplo listo para extender si en el futuro se agrega un rol 'evaluador':
@@ -29,8 +40,8 @@ export const DEFAULT_HOME_ROUTE = '/dashboard/aplicador_de_pruebas';
     en DEFAULT_HOME_ROUTE.
 **/
 export function getHomeRouteForRole(role?: string | null): string {
-  if (role && ROLE_HOME_ROUTES[role]) {
-    return ROLE_HOME_ROUTES[role];
+  if (role && role in ROLE_HOME_ROUTES) {
+    return ROLE_HOME_ROUTES[role as UserRole];
   }
   return DEFAULT_HOME_ROUTE;
 }
