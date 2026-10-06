@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, CheckCircle, Timer } from 'lucide-react';
 
 interface TermanViewProps {
   testData: any;
@@ -60,10 +61,14 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
   }, [testData?.test_questions]);
 
   const finishTest = useCallback(() => {
-    if (!hasCompletedRef.current) {
-      hasCompletedRef.current = true;
-      onCompleteRef.current(userAnswersRef.current);
-    }
+    if (hasCompletedRef.current) return;
+
+    hasCompletedRef.current = true;
+    // Si el guardado falla en el resolver, se rehabilita y permite reintentar
+    Promise.resolve(onCompleteRef.current(userAnswersRef.current))
+      .catch(() => {
+        hasCompletedRef.current = false;
+      });
   }, []);
 
   // Temporizador independiente por serie
@@ -82,15 +87,16 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     return () => clearInterval(timer);
   }, [currentSeriesIndex]);
 
-  // Expiración de tiempo por serie
+  // Fin de tiempo por serie: avanza automáticamente o cierra la prueba
   useEffect(() => {
-    if (seriesTimes[currentSeriesIndex] === 0 && !hasCompletedRef.current) {
-      if (currentSeriesIndex < SERIES_DEFINITIONS.length - 1) {
-        setCurrentSeriesIndex((prev) => prev + 1);
-        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        finishTest();
-      }
+    if (hasCompletedRef.current) return;
+    if (seriesTimes[currentSeriesIndex] > 0) return;
+
+    if (currentSeriesIndex < SERIES_DEFINITIONS.length - 1) {
+      setCurrentSeriesIndex((prev) => prev + 1);
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      finishTest();
     }
   }, [seriesTimes, currentSeriesIndex, finishTest]);
 
@@ -180,7 +186,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-xl border-2 shadow-inner transition-all ${
             timeLeft <= 30 ? 'bg-red-100 border-red-500 text-red-900 animate-pulse' : 'bg-amber-100 border-amber-400 text-amber-900'
           }`}>
-            <span className="material-symbols-outlined text-xl">timer</span>
+            <Timer size={20} aria-hidden="true" />
             <span className="font-mono font-extrabold text-lg tracking-wider">
               {formatTime(timeLeft)}
             </span>
@@ -211,7 +217,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 currentSeriesIndex === 0 ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
+              <ChevronLeft size={18} aria-hidden="true" />
               <span className="uppercase tracking-wider hidden sm:inline">Anterior</span>
             </button>
 
@@ -226,16 +232,16 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 className="flex items-center gap-2 bg-[#BEEE89] text-[#001E28] hover:bg-[#a8e070] font-bold rounded-xl px-4 py-2.5 transition-all shadow-sm text-sm"
               >
                 <span className="uppercase tracking-wider hidden sm:inline">Siguiente</span>
-                <span className="material-symbols-outlined text-base">arrow_forward</span>
+                <ChevronRight size={18} aria-hidden="true" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={finishTest}
-                className="flex items-center gap-2 bg-[#416912] text-white hover:bg-[#34540e] font-bold rounded-xl px-4 py-2.5 transition-all shadow-sm text-sm"
+                className="flex items-center gap-2 bg-[#416912] text-black hover:bg-green font-bold rounded-xl px-4 py-2.5 transition-all shadow-sm text-sm"
               >
                 <span className="uppercase tracking-wider">Finalizar</span>
-                <span className="material-symbols-outlined text-base">check_circle</span>
+                <CheckCircle size={18} aria-hidden="true" />
               </button>
             )}
           </div>

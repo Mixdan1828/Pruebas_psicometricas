@@ -267,10 +267,23 @@ export default function BienvenidaEvaluacion() {
         throw new Error(`Error en datos del candidato: ${errorCandidate?.message || 'No se generó ID'}`);
       }
 
-      // 4. Crear los registros en candidate_results para cada test asociado al enlace
+      // 4. Obtener el creador de la liga para asignarlo como user_id en candidate_results
+      const tokenFromParams = token;
+      const { data: linkOwner, error: linkOwnerError } = await supabase
+        .from('links')
+        .select('created_by')
+        .eq('token', tokenFromParams)
+        .single();
+
+      if (linkOwnerError || !linkOwner || !linkOwner.created_by) {
+        throw new Error('La liga o token de la prueba no es válida.');
+      }
+
+      // 5. Crear los registros en candidate_results para cada test asociado al enlace
       const resultsToInsert = linkedTests.map((item) => ({
         candidate_id: nuevoCandidato.id,
         test_id: item.test_id,
+        user_id: linkOwner.created_by, // 👈 Asignación del creador de la liga
         status: 'en_proceso',
         started_at: new Date().toISOString(),
         link_acceso: token,
@@ -282,7 +295,7 @@ export default function BienvenidaEvaluacion() {
 
       if (errorResult) throw new Error(`Error al iniciar examen: ${errorResult.message}`);
 
-      // 5. Incrementar el contador de usuarios registrados en el enlace
+      // 6. Incrementar el contador de usuarios registrados en el enlace
       const { error: errorUpdateLink } = await supabase
         .from('links')
         .update({ current_users: activeUsers + 1 } as any)

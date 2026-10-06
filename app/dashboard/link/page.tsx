@@ -18,8 +18,10 @@ export default function AccesoLinkPage() {
 
   // Estados del formulario para la tabla 'candidates'
   const [formData, setFormData] = useState({
-    full_name: '',
+    name: '',
+    paternal_surname: '',
     headquarter: '',
+    maternal_surname: '',
     sex: '',
     marital_status: '',
     education_level: '',
@@ -83,8 +85,10 @@ export default function AccesoLinkPage() {
         .insert([
           {
             link_id: linkData.id,
-            full_name: formData.full_name,
+            full_name: `${formData.name} ${formData.paternal_surname} ${formData.maternal_surname}`.trim(),
             headquarter: formData.headquarter,
+            paternal_surname: formData.paternal_surname,
+            maternal_surname: formData.maternal_surname,
             sex: formData.sex,
             marital_status: formData.marital_status,
             education_level: formData.education_level,
@@ -159,22 +163,38 @@ export default function AccesoLinkPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-[#123440] uppercase tracking-wider mb-1.5">
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              required
-              value={formData.full_name}
-              onChange={handleChange}
-              placeholder="Ej. María Fernanda Gómez"
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all text-[#202221]"
-            />
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-[#123440] uppercase tracking-wider mb-1.5">
+                Nombre(s)
+              </label>
+              <input
+                type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Ej. María Fernanda"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all text-[#202221]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-[#123440] uppercase tracking-wider mb-1.5">
+                Apellidos
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text" name="paternal_surname" required value={formData.paternal_surname} onChange={handleChange}
+                  placeholder="Paterno"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all text-[#202221]"
+                />
+                <input
+                  type="text" name="maternal_surname" required value={formData.maternal_surname} onChange={handleChange}
+                  placeholder="Materno"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all text-[#202221]"
+                />
+              </div>
+            </div>
             <div>
               <label className="block text-xs font-bold text-[#123440] uppercase tracking-wider mb-1.5">
                 Sede / Unidad Académica
@@ -189,7 +209,6 @@ export default function AccesoLinkPage() {
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all text-[#202221]"
               />
             </div>
-
             <div>
               <label className="block text-xs font-bold text-[#123440] uppercase tracking-wider mb-1.5">
                 Edad

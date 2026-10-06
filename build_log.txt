@@ -1,0 +1,36 @@
+
+> pruebas-psicometricas@0.1.0 build
+> next build
+
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\mixte\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\mixte\proyectos\pruebas-psicometricas\package-lock.json
+
+Ôû▓ Next.js 16.2.6 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 16.4s
+  Running TypeScript ...
+  Finished TypeScript in 14.6s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/14) ...
+  Generating static pages using 7 workers (3/14) 
+  Generating static pages using 7 workers (6/14) 
+Ô¿» useSearchParams() should be wrapped in a suspense boundary at page "/dashboard/resultados". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at S (C:\Users\mixte\proyectos\pruebas-psicometricas\.next\server\chunks\ssr\proyectos_pruebas-psicometricas_0bm0fcs._.js:2:2692)
+    at r (C:\Users\mixte\proyectos\pruebas-psicometricas\.next\server\chunks\ssr\proyectos_pruebas-psicometricas_0bm0fcs._.js:4:6761)
+    at C:\Users\mixte\proyectos\pruebas-psicometricas\.next\server\chunks\ssr\[root-of-the-server]__0idqg9s._.js:1:893524
+    at an (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84267)
+    at ai (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86086)
+    at al (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:107860)
+    at ao (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:105275)
+    at aa (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84619)
+    at ai (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86135)
+    at ai (C:\Users\mixte\proyectos\pruebas-psicometricas\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:104615)
+Error occurred prerendering page "/dashboard/resultados". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /dashboard/resultados/page: /dashboard/resultados, exiting the build.
+Ô¿» Next.js build worker exited with code: 1 and signal: null

@@ -19,7 +19,6 @@ import {
 import SideNavBar from '../../../componentes/SideNavBar';
 import { createClient } from '@/lib/supabase/client';
 
-// Catálogo de frases y consejos en español
 const DAILY_TIPS = [
   {
     quote: "La precisión en el diagnóstico es el primer paso hacia el bienestar. Verifique siempre las referencias normativas antes del reporte final.",
@@ -72,21 +71,17 @@ export default function AplicadorDePruebas() {
   const [recentActivities, setRecentActivities] = useState<CandidateGroup[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
 
-  // Estado para la frase/consejo del día en español
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
 
-  // Estados para las métricas de las tarjetas
   const [metrics, setMetrics] = useState({
     total: 0,
     pending: 0,
     completedToday: 0,
   });
 
-  // Estados para la paginación (4 elementos por página)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 4;
 
-  // Formateador de fechas a español (ej. "18 ago, 10:25")
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return '';
     const dateObj = new Date(dateString);
@@ -99,13 +94,15 @@ export default function AplicadorDePruebas() {
   };
 
   useEffect(() => {
-    // Cálculo del consejo del día basado en la fecha actual
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 0);
     const diff = now.getTime() - startOfYear.getTime();
     const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
     
-    // Seleccionar frase correspondiente al día del año
     const tipIndex = dayOfYear % DAILY_TIPS.length;
     setDailyTip(DAILY_TIPS[tipIndex]);
 
@@ -113,50 +110,34 @@ export default function AplicadorDePruebas() {
       try {
         setLoadingActivity(true);
 
-        // 1. Obtener usuario autenticado
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (profileData?.full_name) {
-            setUserName(profileData.full_name);
-          } else {
-            setUserName('Usuario');
-          }
-        } else {
+        if (!user) {
           setUserName('Usuario');
+          setLoadingActivity(false);
+          return;
         }
 
-        // 2. Rango del día actual para pruebas completadas hoy
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        setUserName(profileData?.full_name || 'Usuario');
+
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
 
-        // 3. Consultas en paralelo
-        const [
-          { data: linksData, error: linksError },
-          { count: todayCount },
-        ] = await Promise.all([
-          // Obtener registros de la tabla links
-          supabase
-            .from('links')
-            .select('max_users, current_users'),
-          // Pruebas completadas el día de hoy
-          supabase
-            .from('candidate_results')
-            .select('*', { count: 'exact', head: true })
-            .gte('completed_at', startOfToday.toISOString())
-            .lte('completed_at', endOfToday.toISOString()),
-        ]);
+        // 1. Métricas de links habilitados
+        const { data: linksData, error: linksError } = await supabase
+          .from('links')
+          .select('max_users, current_users')
+          .eq('created_by', user.id);
 
-        // Cálculo de métricas basadas en la tabla links
         let calculatedTotalUsers = 0;
         let calculatedPendingUsers = 0;
 
@@ -164,24 +145,47 @@ export default function AplicadorDePruebas() {
           linksData.forEach((link) => {
             const max = link.max_users || 0;
             const current = link.current_users || 0;
-            
             calculatedTotalUsers += max;
             calculatedPendingUsers += Math.max(0, max - current);
           });
         }
 
+        // 2. Conteo de pruebas completadas hoy (usando user_id directo primero)
+        let todayCount = 0;
+        const { count: directCount } = await supabase
+          .from('candidate_results')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('completed_at', startOfToday.toISOString())
+          .lte('completed_at', endOfToday.toISOString());
+
+        if (directCount && directCount > 0) {
+          todayCount = directCount;
+        } else {
+          const { count: relCount } = await supabase
+            .from('candidate_results')
+            .select('id, candidates!inner(links!inner(created_by))', { count: 'exact', head: true })
+            .eq('candidates.links.created_by', user.id)
+            .gte('completed_at', startOfToday.toISOString())
+            .lte('completed_at', endOfToday.toISOString());
+          
+          todayCount = relCount || 0;
+        }
+
         setMetrics({
           total: calculatedTotalUsers,
           pending: calculatedPendingUsers,
-          completedToday: todayCount || 0,
+          completedToday: todayCount,
         });
 
-        // 4. Consulta de actividad reciente (Top 20)
-        const { data: resultsData, error: resultsError } = await supabase
+        // 3. Obtención de candidate_results con estrategia dual
+        // Intento 1: Filtrar por candidate_results.user_id directo
+        let { data: resultsData, error: resultsError } = await supabase
           .from('candidate_results')
           .select(`
             id,
             candidate_id,
+            user_id,
             status,
             started_at,
             completed_at,
@@ -195,16 +199,54 @@ export default function AplicadorDePruebas() {
               name
             )
           `)
-          .order('completed_at', { ascending: false, nullsFirst: false })
-          .limit(20);
+          .eq('user_id', user.id)
+          .limit(30);
 
-        if (resultsError) {
-          console.error('Error al consultar candidate_results:', resultsError);
-          setRecentActivities([]);
-          return;
+        // Intento 2: Si por user_id no trajo nada, intentar mediante candidates -> links -> created_by
+        if (!resultsError && (!resultsData || resultsData.length === 0)) {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('candidate_results')
+            .select(`
+              id,
+              candidate_id,
+              user_id,
+              status,
+              started_at,
+              completed_at,
+              candidates!inner (
+                id,
+                full_name,
+                paternal_surname,
+                maternal_surname,
+                link_id,
+                links!inner (
+                  created_by
+                )
+              ),
+              tests (
+                name
+              )
+            `)
+            .eq('candidates.links.created_by', user.id)
+            .limit(30);
+
+          if (!fallbackError && fallbackData) {
+            resultsData = fallbackData;
+          } else if (fallbackError) {
+            console.error('Error al consultar candidate_results (fallback):', fallbackError.message);
+          }
+        } else if (resultsError) {
+          console.error('Error al consultar candidate_results:', resultsError.message);
         }
 
         if (resultsData && resultsData.length > 0) {
+          // Ordenar cliente-side por timestamp de completado o inicio si están disponibles
+          resultsData.sort((a: any, b: any) => {
+            const timeA = new Date(a.completed_at || a.started_at || 0).getTime();
+            const timeB = new Date(b.completed_at || b.started_at || 0).getTime();
+            return timeB - timeA;
+          });
+
           const groupsMap = new Map<string, CandidateGroup>();
 
           resultsData.forEach((item: any) => {
@@ -261,9 +303,11 @@ export default function AplicadorDePruebas() {
           });
 
           setRecentActivities(Array.from(groupsMap.values()));
+        } else {
+          setRecentActivities([]);
         }
       } catch (error) {
-        console.error('Error no controlado al obtener los datos:', error);
+        console.error('Error general al obtener los datos:', error);
       } finally {
         setLoadingActivity(false);
       }
@@ -272,9 +316,17 @@ export default function AplicadorDePruebas() {
     fetchData();
   }, [supabase]);
 
-  // Paginación
-  const totalPages = Math.ceil(recentActivities.length / ITEMS_PER_PAGE) || 1;
-  const paginatedActivities = recentActivities.slice(
+  // Filtrado por barra de búsqueda
+  const filteredActivities = recentActivities.filter((group) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesCandidate = group.candidate_name.toLowerCase().includes(query);
+    const matchesTest = group.tests.some((t) => t.test_name.toLowerCase().includes(query));
+    return matchesCandidate || matchesTest;
+  });
+
+  const totalPages = Math.ceil(filteredActivities.length / ITEMS_PER_PAGE) || 1;
+  const paginatedActivities = filteredActivities.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -282,12 +334,12 @@ export default function AplicadorDePruebas() {
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'completado':
-        return <span className="px-2.5 py-0.5 bg-emerald-50 text-[#69943A] text-[10px] font-bold rounded-full uppercase">Completado</span>;
+        return <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase">Completado</span>;
       case 'en_proceso':
-        return <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">En Proceso</span>;
+        return <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-full uppercase">En Proceso</span>;
       case 'pendiente':
       default:
-        return <span className="px-2.5 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full uppercase">Pendiente</span>;
+        return <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full uppercase">Pendiente</span>;
     }
   };
 
@@ -340,9 +392,7 @@ export default function AplicadorDePruebas() {
               <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full border-[20px] border-white/5 pointer-events-none"></div>
             </section>
 
-            {/* Tarjetas de Métricas Resumen */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {/* Card 1: Pruebas Totales Habilitadas */}
               <div className="bg-white p-6 rounded-2xl flex flex-col justify-between min-h-[140px] shadow-sm border border-slate-100 hover:shadow-md transition-all">
                 <div className="flex justify-between items-start">
                   <div className="p-2.5 bg-slate-100 text-[#123440] rounded-xl">
@@ -358,7 +408,6 @@ export default function AplicadorDePruebas() {
                 </div>
               </div>
 
-              {/* Card 2: Pruebas Pendientes / Faltantes */}
               <div className="bg-white p-6 rounded-2xl flex flex-col justify-between min-h-[140px] shadow-sm border border-slate-100 hover:shadow-md transition-all">
                 <div className="flex justify-between items-start">
                   <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
@@ -374,7 +423,6 @@ export default function AplicadorDePruebas() {
                 </div>
               </div>
 
-              {/* Card 3: Pruebas Realizadas Hoy */}
               <div className="bg-white p-6 rounded-2xl flex flex-col justify-between min-h-[140px] shadow-sm border border-slate-100 hover:shadow-md transition-all">
                 <div className="flex justify-between items-start">
                   <div className="p-2.5 bg-[#f4f6f0] text-[#69943A] rounded-xl">
@@ -391,13 +439,12 @@ export default function AplicadorDePruebas() {
               </div>
             </div>
 
-            {/* Actividad Reciente y Acciones */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <section className="lg:col-span-2">
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <h3 className="text-xl font-bold text-[#123440]">Actividad Reciente</h3>
-                    <p className="text-xs text-slate-400">Últimas 20 pruebas registradas en la plataforma</p>
+                    <p className="text-xs text-slate-400">Últimas pruebas registradas por tu usuario</p>
                   </div>
                   <Link href="/dashboard/historial_de_pruebas" className="text-[#123440] hover:text-[#69943A] text-xs font-bold flex items-center gap-1 transition-colors">
                     <span>Historial completo</span>
@@ -423,10 +470,10 @@ export default function AplicadorDePruebas() {
                               Cargando actividad reciente...
                             </td>
                           </tr>
-                        ) : recentActivities.length === 0 ? (
+                        ) : filteredActivities.length === 0 ? (
                           <tr>
                             <td colSpan={4} className="px-6 py-6 text-center text-xs text-slate-400">
-                              No hay registros en la base de datos.
+                              {searchQuery ? 'No se encontraron resultados para tu búsqueda.' : 'No tienes pruebas registradas aún.'}
                             </td>
                           </tr>
                         ) : (
@@ -483,11 +530,10 @@ export default function AplicadorDePruebas() {
                     </table>
                   </div>
 
-                  {/* Paginación */}
-                  {!loadingActivity && recentActivities.length > 0 && (
+                  {!loadingActivity && filteredActivities.length > 0 && (
                     <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50/50">
                       <span className="text-xs text-slate-500">
-                        Mostrando {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, recentActivities.length)} a {Math.min(currentPage * ITEMS_PER_PAGE, recentActivities.length)} de {recentActivities.length} registros
+                        Mostrando {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredActivities.length)} a {Math.min(currentPage * ITEMS_PER_PAGE, filteredActivities.length)} de {filteredActivities.length} registros
                       </span>
                       <div className="flex items-center gap-1">
                         <button
@@ -548,7 +594,6 @@ export default function AplicadorDePruebas() {
                   </div>
                 </Link>
 
-                {/* Tarjeta con Frase / Consejo Diarios en Español */}
                 <div className="mt-2 p-5 bg-[#f4f6f0] rounded-2xl border border-[#dce3d5]">
                   <div className="flex items-center gap-2 mb-2 text-[#69943A]">
                     <Lightbulb size={18} />

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getHomeRouteForRole } from '@/lib/utils/roles';
 
 // Rutas que exigen sesión Y estado 'autorizado'
 const PROTECTED_PREFIXES = ['/dashboard'];
@@ -47,27 +48,44 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // 2. Consultar el estado del usuario en public.profiles
+  // 2. Consultar el estado y el rol del usuario en public.profiles
   const { data: profile } = await supabase
     .from('profiles')
-    .select('status')
+    .select('status, role')
     .eq('id', user.id)
     .maybeSingle();
 
-  // Solo los perfiles 'autorizado' pueden entrar a zonas protegidas
+  // Solo los perfiles 'autorizado' pueden entrar a zonas protegidas.
+  // Un perfil nulo o con otro status se trata como 'pendiente'.
   const isAuthorized = profile?.status === 'autorizado';
 
-  // 3. En la pantalla de espera, si ya fue autorizado, lo llevamos al dashboard
+  // 3. En la pantalla de espera, si ya fue autorizado, lo llevamos a su panel según su rol.
   if (pathname === '/pending-approval') {
     if (isAuthorized) {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      url.pathname = getHomeRouteForRole(profile?.role);
       return NextResponse.redirect(url);
     }
     return response;
   }
 
-  // 4. Zonas protegidas: bloquear usuarios no autorizados (pendiente o sin perfil)
+  // 4. Usuario YA autenticado y autorizado no debe quedarse en /login
+  //    (evita el loop de "login exitoso pero vuelve a /login" por cookie desfasada).
+  if (pathname === '/login' && isAuthorized) {
+    const url = request.nextUrl.clone();
+    url.pathname = getHomeRouteForRole(profile?.role);
+    return NextResponse.redirect(url);
+  }
+
+  // 5. El stub genérico /dashboard (y su barra final) no es una vista real:
+  //    lo resolvemos a la ruta de inicio según el rol del usuario.
+  if ((pathname === '/dashboard' || pathname === '/dashboard/') && isAuthorized) {
+    const url = request.nextUrl.clone();
+    url.pathname = getHomeRouteForRole(profile?.role);
+    return NextResponse.redirect(url);
+  }
+
+  // 6. Zonas protegidas: bloquear usuarios no autorizados (pendiente o sin perfil)
   if (isProtected && !isAuthorized) {
     const url = request.nextUrl.clone();
     url.pathname = '/pending-approval';
@@ -78,5 +96,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/pending-approval/:path*'],
+  matcher: ['/dashboard/:path*', '/pending-approval/:path*', '/login/:path*'],
 };

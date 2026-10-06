@@ -5,7 +5,8 @@ import { nanoid } from 'nanoid';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Brain, UserSearch, TrendingUp, Activity, ClipboardList, Users, Link2, 
-  CheckCircle2, RefreshCw, Copy, Search, Bell, Settings, Eye, X, Trash2
+  CheckCircle2, RefreshCw, Copy, Search, Bell, Settings, Eye, X, Trash2,
+  Clock, ShieldAlert, UserCheck, Save, ListChecks
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import SideNavBar from '../../../componentes/SideNavBar';
@@ -21,7 +22,8 @@ const ICON_MAP: { [key: string]: IconMeta } = {
   'Prueba de Aptitud': { icon: TrendingUp, color: 'bg-blue-50 text-blue-700' },
   'Evaluación de Estrés Post-Traumático': { icon: Activity, color: 'bg-rose-50 text-rose-700' },
   'Examen Psicológico General': { icon: ClipboardList, color: 'bg-amber-50 text-amber-700' },
-  'Test de Habilidades Sociales': { icon: Users, color: 'bg-purple-50 text-purple-700' }
+  'Test de Habilidades Sociales': { icon: Users, color: 'bg-purple-50 text-purple-700' },
+  'NOM-035-STPS-2018 (Evaluación Integral)': { icon: ShieldAlert, color: 'bg-rose-50 text-rose-700' }
 };
 
 export default function AsignarPrueba() {
@@ -41,6 +43,14 @@ export default function AsignarPrueba() {
   const [previewTest, setPreviewTest] = useState<any>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Estado para la asignación de candidatos/grupos dentro del modal
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [searchCandidate, setSearchCandidate] = useState('');
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [assignMessage, setAssignMessage] = useState<any>(null);
 
   useEffect(() => {
     async function cargarCatalogo() {
@@ -143,6 +153,7 @@ export default function AsignarPrueba() {
     setModalOpen(true);
     setLoadingPreview(true);
     setPreviewQuestions([]);
+    cargarCandidatos();
 
     try {
       const { data, error } = await supabase
@@ -157,6 +168,67 @@ export default function AsignarPrueba() {
       console.error('Error al cargar preguntas:', error.message);
     } finally {
       setLoadingPreview(false);
+    }
+  };
+
+  const cargarCandidatos = async () => {
+    setLoadingCandidates(true);
+    setCandidates([]);
+    setSelectedCandidates([]);
+    setSearchCandidate('');
+    setAssignMessage(null);
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('id, full_name, paternal_surname, maternal_surname, headquarter')
+        .order('full_name', { ascending: true });
+      if (error) throw error;
+      if (data) setCandidates(data);
+    } catch (error: any) {
+      console.error('Error al cargar candidatos:', error.message);
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  const toggleCandidate = (id: string) => {
+    setSelectedCandidates(prev =>
+      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+    );
+  };
+
+  const handleConfirmAssign = async () => {
+    if (!previewTest || selectedCandidates.length === 0) return;
+    setAssigning(true);
+    setAssignMessage(null);
+    try {
+      const rows = selectedCandidates.map(candidate_id => ({
+        candidate_id,
+        test_id: previewTest.id,
+        status: 'pendiente' as const
+      }));
+
+      const { error } = await supabase
+        .from('candidate_results')
+        .insert(rows);
+
+      if (error) throw error;
+
+      setAssignMessage({
+        type: 'success',
+        text: `Prueba "${previewTest.name}" asignada a ${rows.length} candidato(s).`
+      });
+
+      // También la añadimos a la selección del generador de enlaces
+      if (!selectedTests.some(t => t.id === previewTest.id)) {
+        setSelectedTests([...selectedTests, previewTest]);
+      }
+      setSelectedCandidates([]);
+    } catch (error: any) {
+      console.error('Error al asignar la prueba:', error.message);
+      setAssignMessage({ type: 'error', text: error.message });
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -178,7 +250,7 @@ export default function AsignarPrueba() {
 
   return (
     <div className="bg-[#f9f9f7] text-[#202221] flex min-h-screen font-sans overflow-x-hidden relative">
-      <SideNavBar role="aplicador_de_pruebas" title="Portal Clínico" />
+      <SideNavBar role="aplicador" title="Portal Clínico" />
 
       <div className="flex-1 ml-64 min-h-screen flex flex-col">
         
@@ -199,12 +271,7 @@ export default function AsignarPrueba() {
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
             </button>
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors cursor-pointer">
-              <Settings size={18} />
-            </button>
-            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#123440] font-bold text-xs border border-slate-200 ml-2">
-              A
-            </div>
+            
           </div>
         </header>
 
@@ -263,7 +330,29 @@ export default function AsignarPrueba() {
                         <IconComponent size={22} />
                       </div>
                       <h4 className="font-headline text-sm font-bold text-[#123440] mb-1.5 pr-8">{prueba.name}</h4>
-                      <p className="text-xs text-slate-500 leading-relaxed mb-6 font-medium line-clamp-2">{prueba.description}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed mb-2 font-medium line-clamp-2">{prueba.description}</p>
+
+                      {(() => {
+                        const totalItems = Number(prueba.config_json?.totalItems || 0);
+                        const duration = Number(prueba.tiempo || 0);
+                        const extraTags: string[] = Array.isArray(prueba.config_json?.tags)
+                          ? (prueba.config_json.tags as string[])
+                          : [];
+                        const badges = [
+                          totalItems > 0 ? `${totalItems} Preguntas` : '',
+                          duration > 0 ? `${duration} Minutos` : '',
+                          ...extraTags
+                        ].filter(Boolean);
+                        return badges.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 mb-5">
+                            {badges.map((badge, i) => (
+                              <span key={i} className="text-[10px] font-bold bg-[#f4f6f0] text-[#69943A] px-2.5 py-1 rounded-md">
+                                {badge}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
                       
                       <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md">
@@ -389,7 +478,7 @@ export default function AsignarPrueba() {
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <div>
-                <h3 className="font-headline font-bold text-[#123440] text-lg">Previsualización: {previewTest?.name}</h3>
+                <h3 className="font-headline font-bold text-[#123440] text-lg">{previewTest?.name}</h3>
                 <span className="text-xs text-slate-500 font-medium">Tipo: {previewTest?.type || previewTest?.name}</span>
               </div>
               <button 
@@ -398,6 +487,39 @@ export default function AsignarPrueba() {
               >
                 <X size={20} />
               </button>
+            </div>
+
+            {/* RESUMEN DE LA PRUEBA */}
+            <div className="px-6 py-4 bg-white border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
+                  <ClipboardList size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Prueba</p>
+                  <p className="text-xs font-bold text-[#123440] truncate">{previewTest?.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
+                  <Clock size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Duración</p>
+                  <p className="text-xs font-bold text-[#123440]">Estimada: {previewTest?.tiempo ?? 60} min</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
+                  <ListChecks size={16} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Ítems</p>
+                  <p className="text-xs font-bold text-[#123440]">
+                    {previewTest?.config_json?.totalItems || previewQuestions.length || 137} total
+                  </p>
+                </div>
+              </div>
             </div>
             
             <div className="p-6 overflow-y-auto flex-1 bg-[#f9f9f7]">
@@ -552,20 +674,6 @@ export default function AsignarPrueba() {
                   )}
                 </div>
               )}
-            </div>
-            
-            <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-3">
-              <button 
-                onClick={() => {
-                  if (!selectedTests.some(t => t.id === previewTest.id)) {
-                    setSelectedTests([...selectedTests, previewTest]);
-                  }
-                  setModalOpen(false);
-                }}
-                className="bg-[#123440] text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-[#1a4a5c] transition-colors"
-              >
-                Añadir a la selección
-              </button>
             </div>
           </div>
         </div>

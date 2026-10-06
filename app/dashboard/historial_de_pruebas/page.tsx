@@ -16,12 +16,15 @@ import {
   Search,
   Bell,
   Settings,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import SideNavBar from '../../../componentes/SideNavBar';
 import { createClient } from '@/lib/supabase/client';
 
 const ITEMS_PER_PAGE = 8;
+
+type DateFilterType = 'todos' | 'hoy' | 'semana' | 'mes' | 'personalizado';
 
 interface TestItem {
   id: string;
@@ -41,21 +44,42 @@ export default function HistorialPruebas() {
 
   const [pruebasData, setPruebasData] = useState<TestItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  
+  // Filtros de estado y texto
   const [filterStatus, setFilterStatus] = useState<string>('Todos los estados');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // Filtros de fecha
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('todos');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [showCustomPicker, setShowCustomPicker] = useState<boolean>(false);
+
+  // Paginación
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // 1. Cargar datos reales desde Supabase
+  // Cargar datos directos desde Supabase usando candidate_results.user_id
   useEffect(() => {
     async function fetchCandidateResults() {
       try {
         setLoading(true);
 
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          console.warn('No hay sesión de usuario activa.');
+          setPruebasData([]);
+          setLoading(false);
+          return;
+        }
+
+        // Consulta directa a candidate_results filtrando por user_id
         const { data: resultsData, error } = await supabase
           .from('candidate_results')
           .select(`
             id,
             candidate_id,
+            user_id,
             status,
             started_at,
             completed_at,
@@ -70,52 +94,52 @@ export default function HistorialPruebas() {
               name
             )
           `)
+          .eq('user_id', user.id)
           .order('completed_at', { ascending: false, nullsFirst: false });
 
         if (error) {
-          console.error('Error al obtener datos de Supabase:', error);
+          console.error('Error al obtener candidate_results:', error);
+          setPruebasData([]);
           return;
         }
 
         if (resultsData) {
-          // Transformación y normalización de la información recibida
           const formattedData: TestItem[] = resultsData.map((item: any) => {
-            const candidate = item.candidates;
+            const candidate = Array.isArray(item.candidates) ? item.candidates[0] : item.candidates;
             const fullCandidateName = candidate 
               ? `${candidate.full_name || ''} ${candidate.paternal_surname || ''} ${candidate.maternal_surname || ''}`.trim()
               : 'Candidato Desconocido';
 
-            // Generar iniciales del candidato
             const nameParts = fullCandidateName.split(' ').filter(Boolean);
             const iniciales = nameParts.length >= 2 
               ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
               : (nameParts[0]?.[0] || 'C').toUpperCase();
 
-            // Determinar estado y estilos
             let estado: 'Completado' | 'En Proceso' | 'Pendiente' = 'Pendiente';
-            let color = "bg-red-50 text-red-600 border-red-200";
+            let color = "bg-red-50 text-red-700 border-red-200";
 
             const rawStatus = String(item.status || '').toLowerCase().trim();
             if (rawStatus === 'completado' || rawStatus === 'completed' || item.completed_at) {
               estado = 'Completado';
-              color = "bg-[#9DBA3A]/15 text-[#69943A] border-[#9DBA3A]";
+              color = "bg-emerald-50 text-emerald-700 border-emerald-200";
             } else if (rawStatus === 'en_proceso' || rawStatus === 'in_progress' || item.started_at) {
               estado = 'En Proceso';
-              color = "bg-blue-50 text-blue-600 border-blue-200";
+              color = "bg-blue-50 text-blue-700 border-blue-200";
             }
 
-            // Formatear fecha
             const rawDate = item.completed_at || item.started_at;
             const fecha = rawDate 
               ? new Date(rawDate).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', year: 'numeric' })
               : 'Sin fecha';
+
+            const test = Array.isArray(item.tests) ? item.tests[0] : item.tests;
 
             return {
               id: String(item.id),
               candidateId: String(item.candidate_id || candidate?.id || item.id),
               paciente: fullCandidateName,
               iniciales,
-              tipo: item.tests?.name || 'Prueba Psicométrica',
+              tipo: test?.name || 'Prueba Psicométrica',
               fecha,
               rawDate,
               estado,
@@ -126,7 +150,7 @@ export default function HistorialPruebas() {
           setPruebasData(formattedData);
         }
       } catch (err) {
-        console.error('Error inesperado:', err);
+        console.error('Error inesperado en fetchCandidateResults:', err);
       } finally {
         setLoading(false);
       }
@@ -135,7 +159,7 @@ export default function HistorialPruebas() {
     fetchCandidateResults();
   }, [supabase]);
 
-  // 2. Filtrado dinámico
+  // Filtrado combinado (Búsqueda + Estado + Fechas)
   const filteredPruebas = useMemo(() => {
     return pruebasData.filter((item) => {
       const matchesSearch = 
@@ -146,25 +170,68 @@ export default function HistorialPruebas() {
       const matchesStatus = 
         filterStatus === 'Todos los estados' || item.estado === filterStatus;
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [pruebasData, searchQuery, filterStatus]);
+      let matchesDate = true;
+      if (dateFilter !== 'todos') {
+        if (!item.rawDate) {
+          matchesDate = false;
+        } else {
+          const itemDate = new Date(item.rawDate);
+          const now = new Date();
 
-  // 3. Paginación configurada a 8 registros
+          if (dateFilter === 'hoy') {
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+            matchesDate = itemDate >= startOfToday && itemDate <= endOfToday;
+          } else if (dateFilter === 'semana') {
+            const dayOfWeek = now.getDay();
+            const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() + diffToMonday);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+
+            matchesDate = itemDate >= startOfWeek && itemDate <= endOfWeek;
+          } else if (dateFilter === 'mes') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+            matchesDate = itemDate >= startOfMonth && itemDate <= endOfMonth;
+          } else if (dateFilter === 'personalizado') {
+            if (customStartDate) {
+              const start = new Date(`${customStartDate}T00:00:00`);
+              matchesDate = matchesDate && itemDate >= start;
+            }
+            if (customEndDate) {
+              const end = new Date(`${customEndDate}T23:59:59`);
+              matchesDate = matchesDate && itemDate <= end;
+            }
+          }
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [pruebasData, searchQuery, filterStatus, dateFilter, customStartDate, customEndDate]);
+
+  // Paginación
   const totalPages = Math.ceil(filteredPruebas.length / ITEMS_PER_PAGE) || 1;
   const paginatedPruebas = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredPruebas.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPruebas, currentPage]);
 
-  // 4. Agrupación por candidato de las pruebas paginadas
+  // Agrupación por paciente usando ID único de grupo
   const groupedPruebas = useMemo(() => {
-    const groups: { [key: string]: { paciente: string; iniciales: string; pruebas: TestItem[] } } = {};
+    const groups: { [key: string]: { id: string; paciente: string; iniciales: string; pruebas: TestItem[] } } = {};
     
     paginatedPruebas.forEach((item) => {
       const groupKey = item.candidateId || item.paciente;
       if (!groups[groupKey]) {
         groups[groupKey] = {
+          id: groupKey,
           paciente: item.paciente,
           iniciales: item.iniciales,
           pruebas: []
@@ -176,32 +243,30 @@ export default function HistorialPruebas() {
     return Object.values(groups);
   }, [paginatedPruebas]);
 
-  // Redirección a la vista detallada de las preguntas/respuestas del test
-  const handleVerDetalles = (id: string) => {
-    router.push(`/historial/${id}`);
+  // Navega a la vista de resultados pasando el ID del candidato (candidates.id).
+  // La vista detallada consulta candidate_results por candidate_id para listar
+  // todas las pruebas asociadas al candidato.
+  const handleVerDetalles = (candidateId: string) => {
+    router.push(`/dashboard/resultados?id=${candidateId}`);
   };
 
-  // Descarga directa del archivo de preguntas y respuestas
   const handleDescargarRespuestas = async (e: React.MouseEvent, item: TestItem) => {
-    e.stopPropagation();
-    try {
-      // Consulta adicional a Supabase para obtener las preguntas/respuestas especificas si es necesario
-      const { data: answersData, error } = await supabase
-        .from('candidate_results')
-        .select('answers_json')
-        .eq('id', item.id)
-        .single();
+  e.stopPropagation();
+  try {
+    const { data: answersData, error } = await supabase
+      .from('candidate_results')
+      .select('answers_json') // <--- Campo que contiene las respuestas en JSON
+      .eq('id', item.id)
+      .single();
 
-      if (error) throw error;
-
-      console.log(`Descargando respuestas para la prueba ${item.id}:`, answersData?.answers_json);
-      
-      // Ejemplo: Generar o disparar la descarga de la hoja en PDF
-      alert(`Iniciando descarga de hoja de preguntas y respuestas para la prueba #${item.id}`);
-    } catch (err) {
-      console.error('Error al descargar las respuestas:', err);
-    }
-  };
+    if (error) throw error;
+    
+    // Aquí puedes agregar tu lógica para exportar a PDF o descargar el archivo JSON
+    alert(`Descargando respuestas de la prueba #${item.id}`);
+  } catch (err) {
+    console.error('Error al descargar las respuestas:', err);
+  }
+};
 
   return (
     <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans">
@@ -247,7 +312,7 @@ export default function HistorialPruebas() {
               <div className="max-w-2xl">
                 <h1 className="text-3xl font-black tracking-tight text-[#123440] mb-2">Historial de Pruebas</h1>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  Acceda y gestione el registro completo de análisis clínicos y psicológicos agrupados por paciente.
+                  Acceda y gestione el registro completo de análisis clínicos y psicométricos agrupados por paciente.
                 </p>
               </div>
               <button className="flex items-center gap-2 bg-[#123440] hover:bg-[#1a4a5c] text-white px-5 py-2.5 rounded-xl transition-all font-bold text-xs shadow-sm cursor-pointer active:scale-95">
@@ -257,24 +322,164 @@ export default function HistorialPruebas() {
             </div>
           </section>
 
-          {/* Filtros y Controles */}
+          {/* Filtros de Fecha y Estado */}
           <section className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <div className="lg:col-span-3 bg-white p-3 rounded-xl flex flex-wrap items-center gap-3 border border-slate-100 shadow-sm">
+            <div className="lg:col-span-3 bg-white p-3 rounded-xl flex flex-wrap items-center gap-3 border border-slate-100 shadow-sm relative">
               <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-lg text-slate-600 text-xs font-semibold">
                 <CalendarDays size={14} />
                 <span>Filtrar por:</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                <button className="px-3.5 py-1.5 text-xs font-bold rounded-full bg-[#9DBA3A] text-[#202221] shadow-sm">Hoy</button>
-                <button className="px-3.5 py-1.5 text-xs font-semibold rounded-full text-slate-500 hover:bg-slate-50 transition-colors">Esta Semana</button>
-                <button className="px-3.5 py-1.5 text-xs font-semibold rounded-full text-slate-500 hover:bg-slate-50 transition-colors">Este Mes</button>
-                <button className="px-3.5 py-1.5 text-xs font-semibold rounded-full text-slate-500 border border-slate-200 hover:border-[#9DBA3A] transition-all flex items-center gap-1">
-                  <span>Rango Personalizado</span>
-                  <ChevronDown size={12} />
+              
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button 
+                  onClick={() => {
+                    setDateFilter('todos');
+                    setShowCustomPicker(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs rounded-full transition-all cursor-pointer ${
+                    dateFilter === 'todos' 
+                      ? "bg-[#9DBA3A] text-[#202221] font-bold shadow-sm" 
+                      : "text-slate-500 font-semibold hover:bg-slate-50"
+                  }`}
+                >
+                  Todos
                 </button>
+
+                <button 
+                  onClick={() => {
+                    setDateFilter('hoy');
+                    setShowCustomPicker(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs rounded-full transition-all cursor-pointer ${
+                    dateFilter === 'hoy' 
+                      ? "bg-[#9DBA3A] text-[#202221] font-bold shadow-sm" 
+                      : "text-slate-500 font-semibold hover:bg-slate-50"
+                  }`}
+                >
+                  Hoy
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setDateFilter('semana');
+                    setShowCustomPicker(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs rounded-full transition-all cursor-pointer ${
+                    dateFilter === 'semana' 
+                      ? "bg-[#9DBA3A] text-[#202221] font-bold shadow-sm" 
+                      : "text-slate-500 font-semibold hover:bg-slate-50"
+                  }`}
+                >
+                  Esta Semana
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setDateFilter('mes');
+                    setShowCustomPicker(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 text-xs rounded-full transition-all cursor-pointer ${
+                    dateFilter === 'mes' 
+                      ? "bg-[#9DBA3A] text-[#202221] font-bold shadow-sm" 
+                      : "text-slate-500 font-semibold hover:bg-slate-50"
+                  }`}
+                >
+                  Este Mes
+                </button>
+
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowCustomPicker(!showCustomPicker)}
+                    className={`px-3.5 py-1.5 text-xs rounded-full transition-all flex items-center gap-1 cursor-pointer border ${
+                      dateFilter === 'personalizado' 
+                        ? "bg-[#9DBA3A] text-[#202221] font-bold border-[#9DBA3A] shadow-sm" 
+                        : "text-slate-500 font-semibold border-slate-200 hover:border-[#9DBA3A]"
+                    }`}
+                  >
+                    <span>
+                      {dateFilter === 'personalizado' && (customStartDate || customEndDate)
+                        ? `${customStartDate || '...'} a ${customEndDate || '...'}`
+                        : 'Rango Personalizado'}
+                    </span>
+                    <ChevronDown size={12} className={`transition-transform ${showCustomPicker ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showCustomPicker && (
+                    <div className="absolute top-full left-0 mt-2 z-50 bg-white p-4 rounded-xl shadow-xl border border-slate-200 w-72 space-y-3">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                        <span className="text-xs font-bold text-[#123440]">Seleccionar Fechas</span>
+                        <button 
+                          onClick={() => setShowCustomPicker(false)}
+                          className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Fecha Inicial:</label>
+                          <input 
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => {
+                              setCustomStartDate(e.target.value);
+                              setDateFilter('personalizado');
+                              setCurrentPage(1);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#123440] text-slate-700 font-medium cursor-pointer"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Fecha Final:</label>
+                          <input 
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => {
+                              setCustomEndDate(e.target.value);
+                              setDateFilter('personalizado');
+                              setCurrentPage(1);
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#123440] text-slate-700 font-medium cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => {
+                            setDateFilter('personalizado');
+                            setShowCustomPicker(false);
+                          }}
+                          className="flex-1 bg-[#123440] text-white text-xs py-1.5 rounded-lg font-bold hover:bg-[#1a4a5c] transition-colors cursor-pointer"
+                        >
+                          Aplicar
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCustomStartDate('');
+                            setCustomEndDate('');
+                            setDateFilter('todos');
+                            setShowCustomPicker(false);
+                            setCurrentPage(1);
+                          }}
+                          className="px-2.5 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg font-semibold transition-colors cursor-pointer"
+                        >
+                          Limpiar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Filtro por Estado */}
             <div className="bg-white px-4 py-2 rounded-xl flex items-center gap-2 border border-slate-100 shadow-sm">
               <Filter size={16} className="text-[#69943A]" />
               <select 
@@ -288,7 +493,6 @@ export default function HistorialPruebas() {
                 <option>Todos los estados</option>
                 <option>Completado</option>
                 <option>En Proceso</option>
-                <option>Pendiente</option>
               </select>
             </div>
           </section>
@@ -299,9 +503,6 @@ export default function HistorialPruebas() {
               <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
-                    <th className="px-6 py-4 w-12">
-                      <input type="checkbox" className="rounded border-slate-300 text-[#9DBA3A] focus:ring-[#9DBA3A]" />
-                    </th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">Paciente</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">Tipo de Prueba</th>
                     <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">Fecha</th>
@@ -312,7 +513,7 @@ export default function HistorialPruebas() {
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {loading ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-12 text-slate-400">
+                      <td colSpan={5} className="text-center py-12 text-slate-400">
                         <div className="flex items-center justify-center gap-2 font-medium">
                           <Loader2 className="animate-spin text-[#123440]" size={20} />
                           <span>Cargando evaluaciones de la base de datos...</span>
@@ -321,18 +522,13 @@ export default function HistorialPruebas() {
                     </tr>
                   ) : groupedPruebas.length > 0 ? (
                     groupedPruebas.map((group) => (
-                      <React.Fragment key={group.paciente}>
+                      <React.Fragment key={group.id}>
                         {group.pruebas.map((item, index) => (
                           <tr 
                             key={item.id} 
-                            onClick={() => handleVerDetalles(item.id)}
+                            onClick={() => handleVerDetalles(item.candidateId)}
                             className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                           >
-                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                              <input type="checkbox" className="rounded border-slate-300 text-[#9DBA3A] focus:ring-[#9DBA3A]" />
-                            </td>
-
-                            {/* Renderizado agrupado del candidato usando rowSpan */}
                             {index === 0 && (
                               <td 
                                 className="px-6 py-4 align-top bg-white border-r border-slate-50" 
@@ -357,7 +553,7 @@ export default function HistorialPruebas() {
                             <td className="px-6 py-4 text-slate-600 font-medium">
                               <div>
                                 <p className="font-semibold">{item.tipo}</p>
-                                <p className="text-[11px] text-slate-400 font-medium">ID: {item.id}</p>
+                                
                               </div>
                             </td>
                             <td className="px-6 py-4 text-slate-400 text-xs">{item.fecha}</td>
@@ -369,7 +565,7 @@ export default function HistorialPruebas() {
                             <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end gap-1">
                                 <button 
-                                  onClick={() => handleVerDetalles(item.id)}
+                                  onClick={() => handleVerDetalles(item.candidateId)}
                                   className="p-1.5 text-[#123440] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold" 
                                   title="Ver Preguntas y Respuestas"
                                 >
@@ -390,7 +586,7 @@ export default function HistorialPruebas() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-slate-400 text-sm">
+                      <td colSpan={5} className="text-center py-8 text-slate-400 text-sm">
                         No se encontraron registros que coincidan con la búsqueda.
                       </td>
                     </tr>
@@ -438,13 +634,14 @@ export default function HistorialPruebas() {
 
           {/* Bento Grid Inferior */}
           <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-[#123440] text-white p-6 rounded-2xl relative overflow-hidden group shadow-md">
+            {/* Card de Resumen Semanal con letras blancas legibles */}
+            <div className="bg-[#123440] text-[#FFFFFF] p-6 rounded-2xl relative overflow-hidden group shadow-md">
               <div className="relative z-10">
-                <h3 className="text-lg font-bold mb-1">Resumen Semanal</h3>
+                <h3 className="text-white font-bold mb-1">Resumen Semanal</h3>
                 <p className="text-slate-300 text-xs mb-4">Total de registros obtenidos: {pruebasData.length}</p>
                 <div className="flex items-end gap-1.5">
-                  <span className="text-3xl font-black text-white">+{pruebasData.length}</span>
-                  <span className="text-[10px] font-bold opacity-70 uppercase tracking-wider mb-1">evaluaciones</span>
+                  <span className="text-white font-black text-[#FFFFFF]">+{pruebasData.length}</span>
+                  <span className="text-[20px] text-white font-bold opacity-70 uppercase tracking-wider mb-1">evaluaciones</span>
                 </div>
               </div>
               <div className="absolute right-[-10px] bottom-[-10px] opacity-10 group-hover:scale-110 transition-transform duration-500 text-white">
@@ -454,7 +651,14 @@ export default function HistorialPruebas() {
 
             <div className="md:col-span-2 bg-white p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-5 border border-slate-100 shadow-sm">
               <div className="w-full sm:w-1/4 aspect-video sm:aspect-square bg-[#f4f6f0] rounded-xl flex items-center justify-center text-[#69943A]">
-                <Image src="/images/FDHZ_2025-Color_Vertical.png" alt="Validación Institucional" width={70} height={70} className="object-contain opacity-40 grayscale" />
+                <Image 
+                  src="/images/FDHZ_2025-Color_Vertical.png" 
+                  alt="Validación Institucional" 
+                  width={70} 
+                  height={70} 
+                  style={{ width: 'auto', height: 'auto' }}
+                  className="object-contain opacity-40 grayscale" 
+                />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-[#123440] mb-1">Protocolos de Calidad</h3>
@@ -468,6 +672,7 @@ export default function HistorialPruebas() {
               </div>
             </div>
           </section>
+
           </div>
         </main>
       </div>
