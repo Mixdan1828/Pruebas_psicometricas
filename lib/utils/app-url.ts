@@ -27,5 +27,8 @@ export function getAppBaseUrl(): string {
 }
 
 export function buildTestLink(token: string): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/inicio_de_pruebas/${token}`;
+  }
   return `${getAppBaseUrl()}/dashboard/inicio_de_pruebas/${token}`;
 }
