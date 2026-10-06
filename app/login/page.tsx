@@ -72,6 +72,12 @@ function LoginContent() {
 
   // Único método de autenticación: Google OAuth.
   // El intercambio del `code` por sesión ocurre en /auth/callback (lado servidor).
+  const getURL = () => {
+    let url = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    url = url.replace(/\/$/, '');
+    return `${url}/auth/callback`;
+  };
+
   const handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -79,7 +85,7 @@ function LoginContent() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getURL(),
       },
     });
 

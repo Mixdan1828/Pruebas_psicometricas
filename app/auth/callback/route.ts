@@ -1,15 +1,26 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getHomeRouteForRole } from '@/lib/utils/roles';
+
+// Base canónica para todas las redirecciones del callback:
+// en cualquier deploy de Vercel usamos la URL oficial de producción
+// para no arrastrar dominios de vista previa; en local se respeta localhost.
+const getBaseUrl = (origin: string) => {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
+  if (envUrl && !origin.includes('localhost')) {
+    return envUrl;
+  }
+  return origin;
+};
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
+  const base = getBaseUrl(origin);
   const code = searchParams.get('code');
 
   // 1. Validar que el código de autorización exista
   if (!code) {
-    const url = new URL('/login', origin);
+    const url = new URL('/login', base);
     url.searchParams.set('error', 'Falta el código de autorización de Google.');
     return NextResponse.redirect(url);
   }
@@ -23,7 +34,7 @@ export async function GET(request: Request) {
 
   if (error || !data.user) {
     console.error('Error intercambiando código OAuth por sesión:', error?.message);
-    const url = new URL('/login', origin);
+    const url = new URL('/login', base);
     url.searchParams.set('error', 'No se pudo completar la autenticación con Google.');
     return NextResponse.redirect(url);
   }
@@ -67,12 +78,12 @@ export async function GET(request: Request) {
   const isApproved = profile?.status === 'autorizado';
 
   if (!isApproved) {
-    return NextResponse.redirect(new URL('/pending-approval', origin));
+    return NextResponse.redirect(new URL('/pending-approval', base));
   }
 
-  // 7. Redirigir inteligentemente según el rol asignado.
-  //    Usamos el mismo helper que /login y proxy.ts para que el mapeo
-  //    rol -> ruta sea consistente en toda la app.
-  const homeRoute = getHomeRouteForRole(profile?.role);
-  return NextResponse.redirect(new URL(homeRoute, origin));
+  // 7. Redirigir directamente a /dashboard.
+  //    El stub /dashboard no es una vista real: proxy.ts lo resuelve
+  //    a la ruta de inicio según el rol del usuario (admin/aplicador),
+  //    manteniendo un único punto de verdad para el mapeo rol -> ruta.
+  return NextResponse.redirect(new URL('/dashboard', base));
 }
