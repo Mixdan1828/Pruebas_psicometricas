@@ -261,7 +261,7 @@ export default function ResolverOrchestrator() {
                 testNames={completedTestsNames}
                 timeElapsed="Completado con éxito"
                 onGoHome={() => window.location.href = '/'}
-                onClose={() => setIsFinished(false)}
+                
               />
             );
           })()
