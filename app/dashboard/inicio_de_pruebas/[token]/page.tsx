@@ -3,7 +3,6 @@
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
 import {
   Play, 
   VolumeX, 
@@ -150,7 +149,6 @@ export default function BienvenidaEvaluacion() {
   const router = useRouter();
   const params = useParams();
   const token = params?.token as string;
-  const supabase = createClient();
 
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -183,24 +181,16 @@ export default function BienvenidaEvaluacion() {
       }
 
       try {
-        const { data: linkData, error } = await supabase
-          .from('links')
-          .select('id, token, max_users, current_users')
-          .eq('token', token)
-          .single();
+        // Validación en el SERVIDOR (service role, omite RLS):
+        // el candidato no tiene sesión y la anon key no puede leer `links`.
+        const res = await fetch(`/api/candidate-link?token=${encodeURIComponent(token)}`);
+        const payload = await res.json().catch(() => ({}));
 
-        if (error || !linkData) {
-          throw new Error('El enlace de evaluación no existe o es inválido.');
+        if (!res.ok) {
+          throw new Error(payload?.error || 'El enlace de evaluación no existe o es inválido.');
         }
 
-        const currentUsers = linkData.current_users ?? 0;
-        const maxUsers = linkData.max_users ?? 0;
-
-        if (currentUsers >= maxUsers) {
-          throw new Error('El límite de participantes para esta evaluación ha sido alcanzado.');
-        }
-
-        setLinkInfo(linkData as LinkData);
+        setLinkInfo(payload.link as LinkData);
       } catch (err: any) {
         setPageError(err.message);
       } finally {
@@ -209,7 +199,7 @@ export default function BienvenidaEvaluacion() {
     };
 
     validateTokenOnLoad();
-  }, [token, supabase]);
+  }, [token]);
 
   const handleStartTest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,89 +209,30 @@ export default function BienvenidaEvaluacion() {
     try {
       if (!linkInfo) throw new Error('Enlace no disponible.');
 
-      // 1. Verificar estado actual de cupos del enlace
-      const { data: currentLinkStatus, error: checkErr } = await supabase
-        .from('links')
-        .select('id, current_users, max_users')
-        .eq('id', linkInfo.id)
-        .single();
+      // Registro en el SERVIDOR (service role, omite RLS):
+      // verifica cupo, crea candidate + candidate_results y actualiza current_users.
+      const res = await fetch('/api/candidate-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          linkId: linkInfo.id,
+          nombre: formData.nombre,
+          apellido_paterno: formData.apellido_paterno,
+          apellido_materno: formData.apellido_materno,
+          edad: formData.edad,
+          genero: formData.genero,
+          sede: formData.sede,
+          estado_civil: formData.estado_civil,
+          escolaridad: formData.escolaridad,
+        }),
+      });
 
-      if (checkErr || !currentLinkStatus) {
-        throw new Error('Error al verificar el estado del enlace.');
+      const payload = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Error al procesar el registro.');
       }
-
-      const activeUsers = currentLinkStatus.current_users ?? 0;
-      const limitUsers = currentLinkStatus.max_users ?? 0;
-
-      if (activeUsers >= limitUsers) {
-        throw new Error('El límite de usuarios se alcanzó justo antes de tu registro.');
-      }
-
-      // 2. Obtener las pruebas asociadas al enlace desde la tabla relacional links_tests
-      const { data: linkedTests, error: testsErr } = await supabase
-        .from('link_tests')
-        .select('test_id')
-        .eq('link_id', linkInfo.id);
-
-      if (testsErr || !linkedTests || linkedTests.length === 0) {
-        throw new Error('No hay pruebas configuradas o asociadas a este enlace.');
-      }
-
-      // 3. Crear el registro del candidato
-      const { data: nuevoCandidato, error: errorCandidate } = await supabase
-        .from('candidates')
-        .insert({
-          full_name: formData.nombre,
-          paternal_surname: formData.apellido_paterno,
-          maternal_surname: formData.apellido_materno,
-          age: parseInt(formData.edad, 10),
-          sex: formData.genero,
-          headquarter: formData.sede,
-          marital_status: formData.estado_civil,
-          education_level: formData.escolaridad,
-        } as any)
-        .select('id')
-        .single();
-
-      if (errorCandidate || !nuevoCandidato) {
-        throw new Error(`Error en datos del candidato: ${errorCandidate?.message || 'No se generó ID'}`);
-      }
-
-      // 4. Obtener el creador de la liga para asignarlo como user_id en candidate_results
-      const tokenFromParams = token;
-      const { data: linkOwner, error: linkOwnerError } = await supabase
-        .from('links')
-        .select('created_by')
-        .eq('token', tokenFromParams)
-        .single();
-
-      if (linkOwnerError || !linkOwner || !linkOwner.created_by) {
-        throw new Error('La liga o token de la prueba no es válida.');
-      }
-
-      // 5. Crear los registros en candidate_results para cada test asociado al enlace
-      const resultsToInsert = linkedTests.map((item) => ({
-        candidate_id: nuevoCandidato.id,
-        test_id: item.test_id,
-        user_id: linkOwner.created_by, // 👈 Asignación del creador de la liga
-        status: 'en_proceso',
-        started_at: new Date().toISOString(),
-        link_acceso: token,
-      }));
-
-      const { error: errorResult } = await supabase
-        .from('candidate_results')
-        .insert(resultsToInsert as any);
-
-      if (errorResult) throw new Error(`Error al iniciar examen: ${errorResult.message}`);
-
-      // 6. Incrementar el contador de usuarios registrados en el enlace
-      const { error: errorUpdateLink } = await supabase
-        .from('links')
-        .update({ current_users: activeUsers + 1 } as any)
-        .eq('id', linkInfo.id);
-
-      if (errorUpdateLink) throw new Error(`Error al actualizar cupos: ${errorUpdateLink.message}`);
 
       const nombreCompleto = `${formData.nombre} ${formData.apellido_paterno} ${formData.apellido_materno || ''}`.trim();
       localStorage.setItem('candidato_nombre', nombreCompleto);
@@ -315,7 +246,7 @@ export default function BienvenidaEvaluacion() {
     } finally {
       setLoading(false);
     }
-  }, [formData, linkInfo, token, router, supabase]);
+  }, [formData, linkInfo, token, router]);
 
   if (checkingToken) {
     return (

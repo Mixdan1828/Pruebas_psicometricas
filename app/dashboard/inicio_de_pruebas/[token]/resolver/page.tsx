@@ -2,7 +2,6 @@
 
 import { Component, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import TermanView from '@/componentes/tests/termanView';
 import CleaverView from '@/componentes/tests/CleaverView';
 import Nom035IntegralView from '@/componentes/tests/Nom035IntegralView';
@@ -65,7 +64,6 @@ type FetchPhase = 'loading' | 'ready' | 'error' | 'not_found';
 export default function ResolverOrchestrator() {
   const params = useParams();
   const token = resolveToken(params?.token);
-  const supabase = createClient();
 
   const [candidateTests, setCandidateTests] = useState<any[]>([]);
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
@@ -86,34 +84,21 @@ export default function ResolverOrchestrator() {
     }
 
     try {
-      const { data: candidateData, error: candidateError } = await supabase
-        .from('candidate_results')
-        .select(`
-          id, 
-          status, 
-          test_id, 
-          link_acceso, 
-          answers_json,
-          tests (
-            id,
-            name,
-            type,
-            tiempo,
-            test_questions (
-              id,
-              order_index,
-              content_jsonb
-            )
-          )
-        `)
-        .eq('link_acceso', token)
-        .order('id', { ascending: true });
+      // La asignación se lee en el SERVIDOR (service role, sin RLS) porque el
+      // candidato no tiene sesión y la anon key no puede leer candidate_results.
+      const res = await fetch(`/api/candidate-evaluation?token=${encodeURIComponent(token)}`);
+      const payload = await res.json().catch(() => ({}));
 
-      console.log('[resolver] Respuesta de candidate_results:', { candidateData, candidateError });
-
-      if (candidateError) {
-        throw new Error(candidateError.message);
+      if (!res.ok) {
+        console.warn('[resolver] Evaluación no disponible:', payload?.error);
+        setPhase('not_found');
+        setErrorMessage(
+          payload?.error || 'El enlace no tiene una prueba asignada o el token es inválido.'
+        );
+        return;
       }
+
+      const candidateData = payload.tests as any[];
 
       if (!candidateData || candidateData.length === 0) {
         console.warn('[resolver] No se encontraron asignaciones para el token:', token);
@@ -122,17 +107,8 @@ export default function ResolverOrchestrator() {
         return;
       }
 
-      // Ordenamos las preguntas de cada test por order_index
-      const formattedData = candidateData.map((item: any) => {
-        if (item.tests?.test_questions) {
-          item.tests.test_questions.sort(
-            (a: any, b: any) => (a.order_index || 0) - (b.order_index || 0)
-          );
-        }
-        return item;
-      });
-
-      const validTests = formattedData.filter((item: any) => item.tests !== null);
+      // Las preguntas ya vienen ordenadas por order_index desde el servidor.
+      const validTests = candidateData.filter((item: any) => item.tests !== null);
 
       if (validTests.length === 0) {
         console.error("[resolver] Los registros existen pero no tienen un 'test_id' asignado o válido.");
@@ -159,7 +135,7 @@ export default function ResolverOrchestrator() {
       setPhase('error');
       setErrorMessage(err?.message || 'Ocurrió un error al consultar la evaluación.');
     }
-  }, [token, supabase]);
+  }, [token]);
 
   useEffect(() => {
     loadTests();
@@ -174,22 +150,26 @@ export default function ResolverOrchestrator() {
 
     const isLastTest = currentTestIndex === candidateTests.length - 1;
 
-    // 1. Cada prueba finalizada cambia su propio estado a 'completo'
-    const { error } = await supabase
-      .from('candidate_results')
-      .update({
-        answers_json: answers,
-        status: 'completo',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', currentResult.id);
+    // 1. Guardar en el SERVIDOR (service role, omite RLS):
+    // el candidato no tiene sesión y la anon key no puede actualizar candidate_results.
+    const res = await fetch('/api/candidate-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        resultId: currentResult.id,
+        token,
+        answers,
+      }),
+    });
 
-    if (error) {
-      console.error("[resolver] Error al guardar respuestas de la prueba:", error.message);
+    const payload = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      console.error('[resolver] Error al guardar respuestas de la prueba:', payload?.error);
       if (typeof window !== 'undefined') {
-        window.alert("Ocurrió un error al guardar tus respuestas. Inténtalo de nuevo.");
+        window.alert('Ocurrió un error al guardar tus respuestas. Inténtalo de nuevo.');
       }
-      throw new Error(`Error al guardar respuestas: ${error.message}`);
+      throw new Error(payload?.error || 'Error al guardar respuestas.');
     }
 
     // 2. Actualizar el estado local para reflejar que esta prueba ya se completó
