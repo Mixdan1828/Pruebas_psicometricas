@@ -7,7 +7,6 @@ interface FinalizedProps {
   testNames: string | string[];
   timeElapsed: string;
   onGoHome: () => void;
-  onClose: () => void;
 }
 
 /**
@@ -36,7 +35,7 @@ function dedupeTestNames(input: string | string[]): string {
   return unique.join(', ');
 }
 
-export default function TestFinalizedView({ patientName: initialPatientName, testNames, timeElapsed, onGoHome, onClose }: FinalizedProps) {
+export default function TestFinalizedView({ patientName: initialPatientName, testNames, timeElapsed, onGoHome }: FinalizedProps) {
   const [patientName, setPatientName] = useState(initialPatientName || "Candidato");
 
   // Nombre único de la prueba: aunque el padre envíe "Terman, Terman, Terman"
@@ -121,13 +120,7 @@ export default function TestFinalizedView({ patientName: initialPatientName, tes
               Regresar al Inicio
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-8 py-3 rounded-xl font-headline font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-[#001E28]/20 text-[#001E28] hover:bg-slate-100"
-            >
-              Cerrar vista
-            </button>
+            
           </div>
         </div>
 

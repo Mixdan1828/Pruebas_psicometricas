@@ -380,7 +380,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                           <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
                             isChecked ? 'bg-[#416912] border-[#416912] text-white' : 'border-slate-400 bg-white'
                           }`}>
-                            {isChecked && <span className="material-symbols-outlined text-xs font-bold">check</span>}
+                            {isChecked && <span className="material-symbols-outlined text-[16px]"></span>}
                           </div>
                           <span className="font-medium text-slate-800">{label}</span>
                         </button>
