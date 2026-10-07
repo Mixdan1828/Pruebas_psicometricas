@@ -4,22 +4,56 @@ import React, { useEffect, useState } from 'react';
 
 interface FinalizedProps {
   patientName?: string;
-  testNames: string;
+  testNames: string | string[];
   timeElapsed: string;
   onGoHome: () => void;
   onClose: () => void;
 }
 
-export default function TestFinalizedView({ testNames, timeElapsed, onGoHome, onClose }: FinalizedProps) {
-  const [patientName, setPatientName] = useState("Candidato");
+/**
+ * Deduplica nombres de pruebas preservando el orden de aparición.
+ * Acepta string separado por comas ("Terman, Terman, Terman") o arreglo.
+ * Comparación insensible a mayúsculas/minúsculas y espacios.
+ */
+function dedupeTestNames(input: string | string[]): string {
+  const rawList: string[] = Array.isArray(input)
+    ? input
+    : String(input ?? '').split(',');
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const raw of rawList) {
+    const name = String(raw ?? '').trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(name);
+    }
+  }
+
+  return unique.join(', ');
+}
+
+export default function TestFinalizedView({ patientName: initialPatientName, testNames, timeElapsed, onGoHome, onClose }: FinalizedProps) {
+  const [patientName, setPatientName] = useState(initialPatientName || "Candidato");
+
+  // Nombre único de la prueba: aunque el padre envíe "Terman, Terman, Terman"
+  // (un registro por usuario asignado), aquí se muestra una sola vez.
+  const displayTestNames = dedupeTestNames(testNames);
 
   useEffect(() => {
-    // Recuperamos el nombre que se guardó en el localStorage al iniciar la prueba
+    // El prop tiene prioridad; solo se usa localStorage como respaldo.
+    if (initialPatientName) {
+      setPatientName(initialPatientName);
+      return;
+    }
     const savedName = localStorage.getItem('candidato_nombre');
     if (savedName) {
       setPatientName(savedName);
     }
-  }, []);
+  }, [initialPatientName]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -65,7 +99,7 @@ export default function TestFinalizedView({ testNames, timeElapsed, onGoHome, on
             <div className="col-span-1 md:col-span-2 text-white p-4 rounded-xl flex items-center justify-between" style={{ backgroundColor: '#001E28' }}>
               <div>
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#c2c7c9' }}>Evaluaciones Realizadas</span>
-                <p className="text-base font-headline font-bold">{testNames}</p>
+                <p className="text-base font-headline font-bold">{displayTestNames}</p>
               </div>
               <span className="material-symbols-outlined !text-3xl" style={{ color: '#c2c7c9' }}>psychology</span>
             </div>
@@ -86,6 +120,13 @@ export default function TestFinalizedView({ testNames, timeElapsed, onGoHome, on
             >
               Regresar al Inicio
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-8 py-3 rounded-xl font-headline font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer border border-[#001E28]/20 text-[#001E28] hover:bg-slate-100"
+            >
+              Cerrar vista
             </button>
           </div>
         </div>
