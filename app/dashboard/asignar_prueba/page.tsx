@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import SideNavBar from '../../../componentes/SideNavBar';
-import { buildTestLink } from '@/lib/utils/app-url';
 
 interface IconMeta {
   icon: LucideIcon;
@@ -100,10 +99,11 @@ export default function AsignarPrueba() {
       throw new Error("No se detectó una sesión activa. Inicia sesión nuevamente.");
     }
 
-    // 2. Generar token y URL (usa NEXT_PUBLIC_APP_URL en producción;
-    // cae a window.location.origin en desarrollo)
+    // 2. Generar token y URL en texto plano (sin Markdown, corchetes ni paréntesis).
+    // La base usa NEXT_PUBLIC_APP_URL en producción; en desarrollo cae a window.location.origin.
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, '');
     const token = nanoid(12);
-    const link = buildTestLink(token);
+    const link = `${baseUrl}/dashboard/inicio_de_pruebas/${token}`;
 
     // 3. Insertar registro en 'links'
     const { data: linkData, error: linkError } = await supabase
