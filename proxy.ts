@@ -5,12 +5,26 @@ import { getHomeRouteForRole } from '@/lib/utils/roles';
 // Rutas que exigen sesión Y estado 'autorizado'
 const PROTECTED_PREFIXES = ['/dashboard'];
 
+// Rutas PÚBLICAS dentro de /dashboard: acceso de candidatos sin sesión.
+// Incluye la bienvenida (/dashboard/inicio_de_pruebas/[token]) y la
+// resolución de la prueba (/dashboard/inicio_de_pruebas/[token]/resolver).
+const PUBLIC_PREFIXES = ['/dashboard/inicio_de_pruebas'];
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
+
+  const pathname = request.nextUrl.pathname;
+
+  // Excepción pública: los candidatos sin autenticación deben poder cargar
+  // la vista 'Bienvenido a tu Evaluación Digital' y completar su registro
+  // sin ser interceptados ni redirigidos a /login.
+  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return response; // o NextResponse.next()
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +46,6 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
 
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
