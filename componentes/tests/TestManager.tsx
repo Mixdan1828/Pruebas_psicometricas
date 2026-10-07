@@ -108,10 +108,7 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
         testNames={completedTestsNames}
         timeElapsed={timeElapsedStr}
         onGoHome={() => window.location.href = '/'}
-        onClose={() => {
-          isCompletingRef.current = false;
-          setIsFinished(false);
-        }}
+        
       />
     );
   }
