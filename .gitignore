@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# artefactos temporales de validacion del PDF Terman
+/.tmp-pdf/
+/tsconfig.tmp-pdf.json

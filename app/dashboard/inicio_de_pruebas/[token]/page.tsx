@@ -102,9 +102,23 @@ const DemographicsForm = memo(function DemographicsForm({
             <label htmlFor="sede" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sede de Evaluación</label>
             <select id="sede" required name="sede" value={formData.sede} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]">
               <option value="">Selecciona tu sede correspondiente...</option>
-              <option value="Sede Central Orizaba">Sede Central Orizaba</option>
-              <option value="Sede Córdoba">Sede Córdoba</option>
-              <option value="Sede Veracruz Puerto">Sede Veracruz Puerto</option>
+              <option value="Sede Central Orizaba">Puerta Grande</option>
+              <option value="Sede Córdoba">Tierra blanca</option>
+              <option value="Sede Veracruz Puerto">Torre Diez Sede</option>
+              <option value="Sede Veracruz Puerto">Torre Diez Oficinas</option>
+              <option value="Sede Veracruz Puerto">EMiliano Zarranza</option>
+              <option value="Sede Veracruz Puerto">Coatepec 1</option>
+              <option value="Sede Veracruz Puerto">Coatepec 2</option>
+              <option value="Sede Veracruz Puerto">Coatzacalcos</option>
+              <option value="Sede Veracruz Puerto">Cosamaloapan</option>
+              <option value="Sede Veracruz Puerto">Acayucan</option>
+              <option value="Sede Veracruz Puerto">CD de Mexico</option>
+              <option value="Sede Veracruz Puerto">Tuxtepec</option>
+              <option value="Sede Veracruz Puerto">Consultorios</option>
+              <option value="Sede Veracruz Puerto">Cancha</option>
+              <option value="Sede Veracruz Puerto">Merida</option>
+              <option value="Sede Veracruz Puerto">Boca del rio</option>
+              
             </select>
           </div>
 

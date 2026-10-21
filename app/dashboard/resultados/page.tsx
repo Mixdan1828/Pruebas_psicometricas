@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { generarPDFResultados } from "./generarPDF";
+import {
+  generarPDFHojaRespuestasTerman,
+  esTestTerman,
+} from "./generarPDFTerman";
 
 // Importamos el componente SideNavBar
 import SideNavBar from "@/componentes/SideNavBar";
@@ -38,6 +42,9 @@ interface Candidate {
   paternal_surname?: string;
   maternal_surname?: string;
   age?: number;
+  sex?: string;
+  /** Opcional: no existe en el esquema actual, pero se admite si se agrega. */
+  birth_date?: string;
   [key: string]: unknown;
 }
 
@@ -349,6 +356,27 @@ function DetalleCandidatoContent() {
     setIsGeneratingPDF(true);
     setFeedback(null);
     try {
+      // Si el expediente incluye el test Terman-Merril, se genera la
+      // "Hoja de Respuestas" con el formato oficial (10 series en cascada).
+      const pruebaTerman = pruebas.find((p) => esTestTerman(p));
+      if (pruebaTerman && candidato) {
+        generarPDFHojaRespuestasTerman({
+          candidato: {
+            full_name: candidato.full_name,
+            paternal_surname: candidato.paternal_surname,
+            maternal_surname: candidato.maternal_surname,
+            age: candidato.age,
+            sex: candidato.sex,
+            birth_date: candidato.birth_date,
+            id: candidato.id,
+          },
+          prueba: pruebaTerman,
+          fechaAplicacion: pruebaTerman.started_at || pruebaTerman.completed_at,
+          onError: (mensaje) => setFeedback({ tipo: "error", mensaje }),
+        });
+        return;
+      }
+
       generarPDFResultados({
         candidato,
         pruebas,
