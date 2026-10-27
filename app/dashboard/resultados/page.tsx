@@ -461,17 +461,6 @@ function DetalleCandidatoContent() {
               <Bell size={18} className="text-slate-500" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-[#0d313f] text-white flex items-center justify-center font-bold text-xs">
-                AP
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-[#0d313f] leading-tight">
-                  Aplicador
-                </p>
-                <p className="text-xs text-slate-500 leading-tight">Evaluador</p>
-              </div>
-            </div>
           </div>
         </header>
 
@@ -520,7 +509,7 @@ function DetalleCandidatoContent() {
                 ) : (
                   <Printer size={16} />
                 )}
-                {isGeneratingPDF ? "Generando PDF..." : "Imprimir Resultado"}
+                {isGeneratingPDF ? "Generando PDF..." : "Descargar Resultado"}
               </button>
             </div>
           </div>
@@ -611,9 +600,6 @@ function DetalleCandidatoContent() {
                         <th className="py-3 pr-4 font-semibold">Prueba</th>
                         <th className="py-3 pr-4 font-semibold">Fecha</th>
                         <th className="py-3 pr-4 font-semibold">Estado</th>
-                        <th className="py-3 text-right font-semibold">
-                          Puntuación
-                        </th>
                       </tr>
                     </thead>
                     <tbody>
