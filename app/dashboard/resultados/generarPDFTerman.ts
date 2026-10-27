@@ -17,30 +17,32 @@ export interface SerieTerman {
   inicio: number;
   fin: number;
   cantidad: number;
+  minutos: number;
   bloques?: { desde: number; hasta: number }[];
 }
 
 export const SERIES_TERMAN: SerieTerman[] = [
-  { clave: "I", nombre: "I - 2", inicio: 1, fin: 16, cantidad: 16 },
-  { clave: "II", nombre: "II - 2", inicio: 17, fin: 27, cantidad: 11 },
+  { clave: "I", nombre: "I - 2", inicio: 1, fin: 16, cantidad: 16, minutos: 2 },
+  { clave: "II", nombre: "II - 2", inicio: 17, fin: 27, cantidad: 11, minutos: 2 },
   {
     clave: "III",
     nombre: "III - 2",
     inicio: 28,
     fin: 57,
     cantidad: 30,
+    minutos: 3,
     bloques: [
       { desde: 1, hasta: 15 },
       { desde: 16, hasta: 30 },
     ],
   },
-  { clave: "IV", nombre: "IV - 3", inicio: 58, fin: 75, cantidad: 18 },
-  { clave: "V", nombre: "V - 5", inicio: 76, fin: 87, cantidad: 12 },
-  { clave: "VI", nombre: "VI - 2", inicio: 88, fin: 107, cantidad: 20 },
-  { clave: "VII", nombre: "VII - 2", inicio: 108, fin: 127, cantidad: 20 },
-  { clave: "VIII", nombre: "VIII - 3", inicio: 128, fin: 144, cantidad: 17 },
-  { clave: "IX", nombre: "IX - 3", inicio: 145, fin: 162, cantidad: 18 },
-  { clave: "X", nombre: "X - 4", inicio: 163, fin: 173, cantidad: 11 },
+  { clave: "IV", nombre: "IV - 3", inicio: 58, fin: 75, cantidad: 18, minutos: 3 },
+  { clave: "V", nombre: "V - 5", inicio: 76, fin: 87, cantidad: 12, minutos: 5 },
+  { clave: "VI", nombre: "VI - 2", inicio: 88, fin: 107, cantidad: 20, minutos: 2 },
+  { clave: "VII", nombre: "VII - 2", inicio: 108, fin: 127, cantidad: 20, minutos: 2 },
+  { clave: "VIII", nombre: "VIII - 3", inicio: 128, fin: 144, cantidad: 17, minutos: 3 },
+  { clave: "IX", nombre: "IX - 3", inicio: 145, fin: 162, cantidad: 18, minutos: 3 },
+  { clave: "X", nombre: "X - 4", inicio: 163, fin: 173, cantidad: 11, minutos: 4 },
 ];
 
 export function esTestTerman(prueba: ResultadoCrudo | null | undefined): boolean {
@@ -141,7 +143,6 @@ function mapearRespuestas(prueba: ResultadoCrudo): Map<number, QuestionAnswer> {
   return mapa;
 }
 
-// Cargar imagen como Base64 de forma asíncrona o síncrona si es posible
 async function obtenerImagenLogo(): Promise<string | null> {
   try {
     const response = await fetch("/images/FDHZ_2025-Color_Vertical.png");
@@ -178,11 +179,9 @@ async function escribirEncabezadoGeneral(
   doc.setLineWidth(0.3);
   doc.rect(cuadroX, cuadroY, cuadroAncho, cuadroAlto);
 
-  // Intentar insertar la imagen del logotipo a color dentro del cuadro
   try {
     const logoData = await obtenerImagenLogo();
     if (logoData) {
-      // Ajustar la imagen manteniendo proporciones dentro del cuadro superior derecho
       doc.addImage(logoData, "PNG", cuadroX + 2, cuadroY + 2, cuadroAncho - 4, cuadroAlto - 4);
     } else {
       doc.setFont("helvetica", "italic");
@@ -190,17 +189,17 @@ async function escribirEncabezadoGeneral(
       doc.text("Logo Institucional", cuadroX + cuadroAncho / 2, cuadroY + cuadroAlto / 2, { align: "center" });
     }
   } catch {
-    // Si falla la carga de imagen, se omite sin romper el PDF
+    // Omite si falla
   }
 
-  // 2. Título principal centrado (por debajo del borde superior, respetando el cuadro a la derecha)
+  // 2. Título principal centrado
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(0, 0, 0);
   doc.text("TERMAN - MERRIL (HOJA DE RESPUESTAS)", (pageWidth - cuadroAncho) / 2, 16, { align: "center" });
 
-  // 3. Datos del Candidato solicitados estrictamente en líneas separadas
-  let cursorY = 37; // Espacio debajo del título y cuadro superior
+  // 3. Datos del Candidato
+  let cursorY = 37;
 
   const nombreVal = nombreCompleto(candidato) || "—";
   doc.setFont("helvetica", "bold");
@@ -215,7 +214,6 @@ async function escribirEncabezadoGeneral(
   doc.setFont("helvetica", "normal");
   doc.text(fechaInicioPrueba, MARGEN + 58, cursorY);
 
-  // Salto de línea de separación antes del siguiente bloque de datos
   cursorY += 8;
 
   const sexoVal = limpiarTexto(candidato?.sex) || "—";
@@ -238,7 +236,6 @@ async function escribirEncabezadoGeneral(
   doc.setFont("helvetica", "normal");
   doc.text(edadVal, MARGEN + 158, cursorY);
 
-  // Salto de línea con separación estricta de 1 cm (10 mm) hacia las series
   return cursorY + 10;
 }
 
@@ -250,7 +247,7 @@ function recortar(doc: jsPDF, texto: string, anchoMm: number): string {
   if (!texto) return "";
   if (doc.getTextWidth(texto) <= anchoMm) return texto;
   let salida = texto;
-  while (salida.length > 1 && doc.getTextWidth(`${salida}.`) > anchoMm) {
+  while (salida.length > 1 && doc.getTextWidth(`${salida}.`) <= anchoMm) {
     salida = salida.slice(0, -1);
   }
   return `${salida}.`;
@@ -271,7 +268,6 @@ function dibujarCelda(
   doc.setLineWidth(0.15);
   doc.rect(x, y, ancho, alto);
 
-  // Subcolumna del número (fondo blanco limpio)
   doc.setFillColor(255, 255, 255);
   doc.rect(x, y, ANCHO_NUM, alto, "F");
   doc.setDrawColor(0, 0, 0);
@@ -321,7 +317,6 @@ function dibujarCuadriculaSeries(
   SERIES_TERMAN.forEach((serie, i) => {
     const x = MARGEN + i * anchoColumna;
 
-    // Encabezado de cada serie en blanco y negro puro
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.2);
     doc.setFillColor(255, 255, 255);
@@ -423,8 +418,6 @@ export async function generarPDFHojaRespuestasTerman({
       formatearFechaLarga(fechaAplicacion || prueba?.started_at) || "—";
 
     const yEncabezado = await escribirEncabezadoGeneral(doc, candidato, fechaInicio);
-    
-    // Salto adicional de 1 cm (10 mm) antes de desplegar las columnas de preguntas y respuestas
     const ySeries = yEncabezado + 10;
 
     const mapaRespuestas = mapearRespuestas(prueba);
