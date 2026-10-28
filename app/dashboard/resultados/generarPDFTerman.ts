@@ -294,7 +294,7 @@ function escribirEncabezadoGeneral(
   doc.text(nombreCompleto(candidato) || "—", MARGEN + 38, cajaY + 4.5);
 
   doc.setFont("helvetica", "bold");
-  doc.text("FECHA DE APLICACIÓN:", colFechaX + 2, cajaY + 4.5);
+  doc.text("FECHA DE APLICACIÓN:", colFechaX + 1, cajaY + 4.5);
   doc.setFont("helvetica", "normal");
   doc.text(fechaAplicacion, colFechaX + 41, cajaY + 4.5);
 
@@ -405,8 +405,8 @@ function dibujarCuadriculaSeries(
   });
 
   try {
-    const imgWidth = 26;
-    const imgHeight = 13;
+    const imgWidth = 36;
+    const imgHeight = 33;
     const imgX = pageWidth - MARGEN - imgWidth;
     const imgY = pageHeight - MARGEN - imgHeight;
 

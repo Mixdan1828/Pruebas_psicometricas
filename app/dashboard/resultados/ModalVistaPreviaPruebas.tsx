@@ -298,7 +298,7 @@ export function ModalVistaPreviaPruebas({
                 {esTerman(pruebaSeleccionada) ? (
                   <div>
                     <div className="flex justify-end w-full mb-4">
-                      <div className="w-20 h-20 border-2 border-black bg-white shadow-sm flex items-center justify-center"></div>
+                      <div className="w-35 h-15 border-2 border-black bg-white shadow-sm flex items-center justify-center"></div>
                     </div>
 
                     <h5 className="text-center font-bold text-sm text-[#0d313f] uppercase mb-4 pb-2">
