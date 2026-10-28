@@ -247,7 +247,7 @@ export default function HistorialPruebas() {
   // La vista detallada consulta candidate_results por candidate_id para listar
   // todas las pruebas asociadas al candidato.
   const handleVerDetalles = (candidateId: string) => {
-    router.push(`/dashboard/resultados?id=${candidateId}`);
+    router.push(`/dashboard/resultados/${candidateId}`);
   };
 
   const handleDescargarRespuestas = async (e: React.MouseEvent, item: TestItem) => {
