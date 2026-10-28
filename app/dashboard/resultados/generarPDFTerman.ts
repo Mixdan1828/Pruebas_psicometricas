@@ -62,6 +62,7 @@ export interface DatosCandidatoTerman {
   age?: number | null;
   sex?: string | null;
   Fecha_Nacimiento?: string | null;
+  birth_date?: string | null; // Soportado para evitar conflictos de tipos
   id?: string | null;
 }
 
@@ -216,9 +217,10 @@ async function escribirEncabezadoGeneral(
 
   cursorY += 8;
 
+  const fechaNacimientoReal = candidato?.Fecha_Nacimiento || candidato?.birth_date;
   const sexoVal = limpiarTexto(candidato?.sex) || "—";
-  const nacimientoVal = candidato?.Fecha_Nacimiento ? formatearFechaLarga(candidato.Fecha_Nacimiento) : "—";
-  const edadCalculada = edadDesdeNacimiento(candidato?.Fecha_Nacimiento);
+  const nacimientoVal = fechaNacimientoReal ? formatearFechaLarga(fechaNacimientoReal) : "—";
+  const edadCalculada = edadDesdeNacimiento(fechaNacimientoReal);
   const edadVal = candidato?.age != null ? `${candidato.age} años` : edadCalculada != null ? `${edadCalculada} años` : "—";
 
   doc.setFont("helvetica", "bold");
