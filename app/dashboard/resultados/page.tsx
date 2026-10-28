@@ -80,7 +80,7 @@ function ListadoResultados() {
 
         const porCandidato = new Map<string, CandidateResult | null>();
         (resultados || []).forEach((r) => {
-          const cid = r.candidate_id;
+          const cid = r.candidate_id ?? "";
           const existente = porCandidato.get(cid);
           if (!existente) {
             porCandidato.set(cid, r as CandidateResult);
@@ -280,7 +280,7 @@ function ListadoResultados() {
                 })}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="py-8 text-center text-slate-500">
+                    <td colSpan={6} className="py-8 text-center text-slate-500">
                       No se encontraron candidatos registrados.
                     </td>
                   </tr>
