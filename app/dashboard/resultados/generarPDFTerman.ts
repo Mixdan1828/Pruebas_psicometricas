@@ -284,9 +284,9 @@ function dibujarCelda(
 
   const textoRespuesta = respondida ? respuesta : "";
   doc.setFont("helvetica", respondida ? "bold" : "italic");
-  doc.setFontSize(respondida ? fontSize : fontSize - 0.5);
+  doc.setFontSize(respondida ? fontSize : Math.max(fontSize - 0.5, 3));
   doc.setTextColor(0, 0, 0);
-  
+
   if (respondida) {
     const disponible = ancho - ANCHO_NUM - 1.4;
     doc.text(
@@ -305,16 +305,38 @@ function dibujarCuadriculaSeries(
   inicioY: number
 ): void {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const anchoTotal = pageWidth - MARGEN * 2;
   const anchoColumna = anchoTotal / SERIES_TERMAN.length;
 
   const maxReactivos = Math.max(...SERIES_TERMAN.map((s) => s.cantidad));
   const altoCabeceraSerie = 8;
+
+  // -----------------------------------------------------------------------
+  // Cálculo seguro del espacio vertical disponible.
+  // Reserva un margen inferior para que la cuadrícula nunca choque con
+  // el pie de página ni se salga del área imprimible de la hoja A4.
+  // -----------------------------------------------------------------------
+  const MARGEN_INFERIOR_SEGURO = 14; // mm reservados para pie de página
+  const espacioDisponible =
+    pageHeight - inicioY - altoCabeceraSerie - MARGEN_INFERIOR_SEGURO;
+
+  // Alto de fila: nunca mayor al ideal (ALTO_FILA) y nunca menor que
+  // un mínimo legible para evitar colapso visual.
+  const ALTO_FILA_MIN = 4.0;
   const altoFila = Math.min(
     ALTO_FILA,
-    (doc.internal.pageSize.getHeight() - inicioY - altoCabeceraSerie - 12) / maxReactivos
+    Math.max(ALTO_FILA_MIN, espacioDisponible / maxReactivos)
   );
-  const fontSize = altoFila < 5.5 ? 5 : 5.5;
+
+  // Fuente proporcional al alto de la celda: siempre cabe dentro sin
+  // recortar ni superponerse con la fila de abajo.
+  const FUENTE_MIN = 3.0;
+  const FUENTE_MAX = 5.5;
+  const fontSize = Math.max(
+    FUENTE_MIN,
+    Math.min(FUENTE_MAX, altoFila * 0.72)
+  );
 
   SERIES_TERMAN.forEach((serie, i) => {
     const x = MARGEN + i * anchoColumna;
@@ -366,9 +388,17 @@ function dibujarCuadriculaSeries(
   });
 
   const altoCeldas = maxReactivos * altoFila;
+  const altoCuadrilla = altoCabeceraSerie + altoCeldas;
+
+  // Evitar que el contorno general se dibuje fuera del área de la página.
+  const altoContenido = Math.min(
+    altoCuadrilla,
+    pageHeight - inicioY - MARGEN_INFERIOR_SEGURO
+  );
+
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.3);
-  doc.rect(MARGEN, inicioY, anchoTotal, altoCabeceraSerie + altoCeldas);
+  doc.rect(MARGEN, inicioY, anchoTotal, altoContenido);
 }
 
 // ---------------------------------------------------------------------------
