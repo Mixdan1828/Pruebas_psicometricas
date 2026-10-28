@@ -4,29 +4,27 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { generarPDFResultados } from "./generarPDF";
+
 import {
   generarPDFHojaRespuestasTerman,
   esTestTerman,
 } from "./generarPDFTerman";
 
-// Importamos el componente SideNavBar
+// Importamos el modal modular y el SideNavBar
+import { ModalVistaPreviaPruebas } from "./ModalVistaPreviaPruebas";
 import SideNavBar from "@/componentes/SideNavBar";
 
 import {
   Loader2,
   Save,
   Eye,
-  X,
-  Printer,
   CalendarDays,
   MessageSquare,
   ClipboardList,
-  Search,
-  Bell,
   ChevronRight,
   ArrowLeft,
   Pencil,
+  Download
 } from "lucide-react";
 
 // Instancia global de Supabase fuera del componente
@@ -43,7 +41,6 @@ interface Candidate {
   maternal_surname?: string;
   age?: number;
   sex?: string;
-  /** Opcional: no existe en el esquema actual, pero se admite si se agrega. */
   birth_date?: string;
   [key: string]: unknown;
 }
@@ -294,70 +291,11 @@ function DetalleCandidatoContent() {
     }
   };
 
-  const renderReporte = () => (
-    <div className="p-8 text-slate-800">
-      <h1 className="text-xl font-bold text-[#0d313f]">Reporte de Resultados</h1>
-      <p className="text-sm text-slate-500 mt-1">
-        Candidato: <strong>{nombreCompleto || "Sin nombre"}</strong>
-        {candidato?.age != null ? ` — Edad: ${candidato.age} años` : ""}
-      </p>
-
-      <div className="mt-6 space-y-4">
-        {pruebas.map((p, i) => {
-          const st = statusInfo(p.status);
-          return (
-            <div
-              key={p.id || i}
-              className="border border-slate-200 rounded-lg p-4"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-bold text-[#0d313f]">{nombreTest(p)}</h3>
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full border ${st.cls}`}
-                >
-                  {st.label}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Aplicada el: {formatearFecha(p.started_at || p.completed_at)}
-              </p>
-              <div className="mt-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Puntuación
-                </p>
-                <pre className="mt-1 whitespace-pre-wrap text-sm bg-slate-50 border border-slate-100 rounded-lg p-3">
-                  {formatearScore(p.score_json)}
-                </pre>
-              </div>
-              {p.examiner_notes && (
-                <div className="mt-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Observaciones del evaluador
-                  </p>
-                  <p className="mt-1 text-sm text-slate-700">
-                    {p.examiner_notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {pruebas.length === 0 && (
-          <p className="text-sm text-slate-500">
-            El candidato no tiene pruebas registradas.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-
   const handleDescargarResultados = async () => {
     if (isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     setFeedback(null);
     try {
-      // Si el expediente incluye el test Terman-Merril, se genera la
-      // "Hoja de Respuestas" con el formato oficial (10 series en cascada).
       const pruebaTerman = pruebas.find((p) => esTestTerman(p));
       if (pruebaTerman && candidato) {
         generarPDFHojaRespuestasTerman({
@@ -372,20 +310,14 @@ function DetalleCandidatoContent() {
           },
           prueba: pruebaTerman,
           fechaAplicacion: pruebaTerman.started_at || pruebaTerman.completed_at,
-          onError: (mensaje) => setFeedback({ tipo: "error", mensaje }),
+          onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
         });
-        return;
+      } else {
+        setFeedback({
+          tipo: "error",
+          mensaje: "No se encontró una prueba de Terman válida para generar el PDF.",
+        });
       }
-
-      generarPDFResultados({
-        candidato,
-        pruebas,
-        statusInfo,
-        formatearFecha,
-        formatearScore,
-        nombreTest,
-        onError: (mensaje) => setFeedback({ tipo: "error", mensaje }),
-      });
     } catch (err) {
       console.error("Error al generar el PDF:", err);
       setFeedback({
@@ -440,41 +372,10 @@ function DetalleCandidatoContent() {
       <SideNavBar
         title="Modulo Aplicador"
         role="aplicador"
-        candidateId={candidateId}
+        candidateId={candidateId ?? undefined}
       />
 
       <div className="flex-1 ml-64 min-h-screen flex flex-col">
-        {/* TopBar */}
-        <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center gap-6 sticky top-0 z-30">
-          <div className="relative w-full max-w-md">
-            <Search
-              size={17}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
-            />
-            <input
-              placeholder="Buscar candidatos o folios..."
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-100 border border-slate-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#70a444] focus:bg-white transition-all placeholder:text-slate-500"
-            />
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <button className="relative p-2.5 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">
-              <Bell size={18} className="text-slate-500" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-[#0d313f] text-white flex items-center justify-center font-bold text-xs">
-                AP
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-sm font-semibold text-[#0d313f] leading-tight">
-                  Aplicador
-                </p>
-                <p className="text-xs text-slate-500 leading-tight">Evaluador</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
         {/* Main Content */}
         <main className="px-8 py-6 flex-1">
           {/* Breadcrumb */}
@@ -513,14 +414,14 @@ function DetalleCandidatoContent() {
               <button
                 onClick={handleDescargarResultados}
                 disabled={isGeneratingPDF}
-                className="flex items-center gap-2 px-4 py-2 text- font-semibold text-white bg-[#0d313f] rounded-full hover:bg-[#164a5c] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#0d313f] rounded-full hover:bg-[#164a5c] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isGeneratingPDF ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
-                  <Printer size={16} />
+                  <Download size={16} />
                 )}
-                {isGeneratingPDF ? "Generando PDF..." : "Imprimir Resultado"}
+                {isGeneratingPDF ? "Generando PDF..." : "Descargar Resultados"}
               </button>
             </div>
           </div>
@@ -735,54 +636,19 @@ function DetalleCandidatoContent() {
         </main>
       </div>
 
-      {/* Report Modal */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-              <h3 className="font-bold text-[#0d313f] flex items-center gap-2">
-                <Eye size={18} className="text-[#70a444]" />
-                Vista previa del reporte
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 min-h-0">{renderReporte()}</div>
-
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2 flex-wrap bg-white shrink-0">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-full hover:bg-slate-50 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                Cerrar
-              </button>
-              <button
-                onClick={handleDescargarResultados}
-                disabled={isGeneratingPDF}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-[#0d313f] rounded-full hover:bg-[#164a5c] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {isGeneratingPDF ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Printer size={16} />
-                )}
-                {isGeneratingPDF ? "Generando PDF..." : "Imprimir / Guardar PDF"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modal Modular de Vista Previa de Pruebas */}
+      <ModalVistaPreviaPruebas
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        candidato={candidato}
+        pruebas={pruebas}
+        statusInfo={statusInfo}
+        formatearFecha={formatearFecha}
+        nombreTest={nombreTest}
+        onDescargarPrueba={() => {
+          handleDescargarResultados();
+        }}
+      />
     </div>
   );
 }
@@ -809,8 +675,8 @@ function InfoItem({
     </div>
   );
 }
-// Envoltorio con Suspense: `useSearchParams()` en DetalleCandidatoContent requiere
-// un límite de Suspense durante el prerender estático (fallo de `next build` en Vercel).
+
+// Envoltorio con Suspense
 export default function DetalleCandidato() {
   return (
     <Suspense

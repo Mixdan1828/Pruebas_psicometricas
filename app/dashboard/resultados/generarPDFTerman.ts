@@ -3,15 +3,8 @@ import {
   obtenerPreguntas,
   parseRespuestas,
   tieneRespuestas,
-  type QuestionAnswer,
   type ResultadoCrudo,
 } from "@/lib/utils/parseAnswers";
-
-// ---------------------------------------------------------------------------
-// Definición de las 10 series (subtests) del Test de Terman-Merril.
-// `inicio`/`fin` corresponden al `order_index` global de la pregunta y
-// `cantidad` al número de reactivos que le corresponden a la serie.
-// ---------------------------------------------------------------------------
 
 export interface SerieTerman {
   clave: string;
@@ -20,35 +13,22 @@ export interface SerieTerman {
   inicio: number;
   fin: number;
   cantidad: number;
-  /** Divisiones opcionales en bloques (ej. Serie III: 1-15 y 16-30). */
   bloques?: { desde: number; hasta: number }[];
 }
 
 export const SERIES_TERMAN: SerieTerman[] = [
-  { clave: "I", nombre: "Serie I", minutos: 2, inicio: 1, fin: 16, cantidad: 16 },
-  { clave: "II", nombre: "Serie II", minutos: 2, inicio: 17, fin: 27, cantidad: 11 },
-  {
-    clave: "III",
-    nombre: "Serie III",
-    minutos: 2,
-    inicio: 28,
-    fin: 57,
-    cantidad: 30,
-    bloques: [
-      { desde: 1, hasta: 15 },
-      { desde: 16, hasta: 30 },
-    ],
-  },
-  { clave: "IV", nombre: "Serie IV", minutos: 3, inicio: 58, fin: 75, cantidad: 18 },
-  { clave: "V", nombre: "Serie V", minutos: 5, inicio: 76, fin: 87, cantidad: 12 },
-  { clave: "VI", nombre: "Serie VI", minutos: 2, inicio: 88, fin: 107, cantidad: 20 },
-  { clave: "VII", nombre: "Serie VII", minutos: 2, inicio: 108, fin: 127, cantidad: 20 },
-  { clave: "VIII", nombre: "Serie VIII", minutos: 3, inicio: 128, fin: 144, cantidad: 17 },
-  { clave: "IX", nombre: "Serie IX", minutos: 3, inicio: 145, fin: 162, cantidad: 18 },
-  { clave: "X", nombre: "Serie X", minutos: 4, inicio: 163, fin: 173, cantidad: 11 },
+  { clave: "I", nombre: "I-2", minutos: 2, inicio: 1, fin: 16, cantidad: 16 },
+  { clave: "II", nombre: "II-2", minutos: 2, inicio: 17, fin: 27, cantidad: 11 },
+  { clave: "III", nombre: "III-2", minutos: 2, inicio: 28, fin: 57, cantidad: 30 },
+  { clave: "IV", nombre: "IV-3", minutos: 3, inicio: 58, fin: 75, cantidad: 18 },
+  { clave: "V", nombre: "V-5", minutos: 5, inicio: 76, fin: 87, cantidad: 12 },
+  { clave: "VI", nombre: "VI-2", minutos: 2, inicio: 88, fin: 107, cantidad: 20 },
+  { clave: "VII", nombre: "VII-2", minutos: 2, inicio: 108, fin: 127, cantidad: 20 },
+  { clave: "VIII", nombre: "VIII-3", minutos: 3, inicio: 128, fin: 144, cantidad: 17 },
+  { clave: "IX", nombre: "IX-3", minutos: 3, inicio: 145, fin: 162, cantidad: 18 },
+  { clave: "X", nombre: "X-4", minutos: 4, inicio: 163, fin: 173, cantidad: 11 },
 ];
 
-/** ¿El test relacionado corresponde al Terman-Merril? */
 export function esTestTerman(prueba: ResultadoCrudo | null | undefined): boolean {
   const test = Array.isArray(prueba?.tests) ? prueba?.tests[0] : prueba?.tests;
   const campos = [test?.name, test?.type]
@@ -66,30 +46,23 @@ export interface DatosCandidatoTerman {
   age?: number | null;
   sex?: string | null;
   birth_date?: string | null;
+  Fecha_Nacimiento?: string | null;
   id?: string | null;
 }
 
 export interface GenerarPDFTermanOptions {
   candidato: DatosCandidatoTerman | null;
   prueba: ResultadoCrudo;
-  /** Fecha de aplicación (ISO). Si se omite se toma de la prueba. */
   fechaAplicacion?: string | null;
   onError?: (mensaje: string) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Constantes de maquetado (mm, A4 horizontal)
-// ---------------------------------------------------------------------------
-
 const MARGEN = 10;
-const COLOR_PRIMARIO: [number, number, number] = [13, 49, 63];
-const COLOR_TEXTO: [number, number, number] = [30, 41, 59];
-const COLOR_GRIS: [number, number, number] = [100, 116, 139];
-const COLOR_LINEA: [number, number, number] = [203, 213, 225];
-const COLOR_FONDO_SUAVE: [number, number, number] = [241, 245, 249];
+const COLOR_NEGRO: [number, number, number] = [0, 0, 0];
+const COLOR_GRIS_CABECERA: [number, number, number] = [226, 232, 240];
 
-const ALTO_FILA = 6.6; // alto de cada reactivo
-const ANCHO_NUM = 5.2; // ancho de la sub-columna del número de pregunta
+const ALTO_FILA = 4.3; 
+const ANCHO_NUM = 5.0;
 
 function limpiarTexto(valor: unknown): string {
   if (valor === null || valor === undefined) return "";
@@ -102,10 +75,6 @@ function limpiarTexto(valor: unknown): string {
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .trim();
 }
-
-// ---------------------------------------------------------------------------
-// Helpers de datos
-// ---------------------------------------------------------------------------
 
 function nombreCompleto(candidato: DatosCandidatoTerman | null): string {
   return [candidato?.full_name, candidato?.paternal_surname, candidato?.maternal_surname]
@@ -129,41 +98,157 @@ function formatearFechaLarga(fecha: string | null | undefined): string {
   }
 }
 
-function edadDesdeNacimiento(fechaNacimiento: string | null | undefined): number | null {
-  if (!fechaNacimiento) return null;
+function mapearRespuestasPersonalizadas(prueba: ResultadoCrudo): Map<number, { resp1: string; resp2?: string }> {
+  const mapa = new Map<number, { resp1: string; resp2?: string }>();
   try {
-    const fecha = new Date(fechaNacimiento);
-    if (Number.isNaN(fecha.getTime())) return null;
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - fecha.getFullYear();
-    const mes = hoy.getMonth() - fecha.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad -= 1;
-    return edad >= 0 && edad < 130 ? edad : null;
-  } catch {
-    return null;
-  }
-}
+    const testObj = Array.isArray(prueba?.tests) ? prueba.tests[0] : prueba?.tests;
+    if (!testObj || !testObj.test_questions) return mapa;
 
-/** Índice: número global de pregunta -> respuesta formateada. */
-function mapearRespuestas(prueba: ResultadoCrudo): Map<number, QuestionAnswer> {
-  const mapa = new Map<number, QuestionAnswer>();
-  try {
-    const preguntas = obtenerPreguntas(prueba);
-    if (preguntas.length === 0 || !tieneRespuestas(prueba.answers_json)) return mapa;
-    parseRespuestas(prueba.answers_json, preguntas).forEach((r) => {
-      mapa.set(Number(r.numero), { ...r, respuesta: limpiarTexto(r.respuesta) });
+    const preguntas = testObj.test_questions;
+    const respuestasJson = (prueba?.answers_json || {}) as Record<string, any>;
+
+    preguntas.forEach((q: any) => {
+      const parsed = typeof q.content_jsonb === 'string' ? JSON.parse(q.content_jsonb || "{}") : (q.content_jsonb || {});
+      const numeroSerie = Number(parsed?.serie);
+
+      const serieConfig = SERIES_TERMAN.find(s => {
+        const idNum = s.clave === "I" ? 1 : s.clave === "II" ? 2 : s.clave === "III" ? 3 : s.clave === "IV" ? 4 : s.clave === "V" ? 5 : s.clave === "VI" ? 6 : s.clave === "VII" ? 7 : s.clave === "VIII" ? 8 : s.clave === "IX" ? 9 : 10;
+        return idNum === numeroSerie;
+      });
+
+      if (!serieConfig) return;
+
+      const preguntasSerie = preguntas
+        .filter((item: any) => {
+          const pJson = typeof item.content_jsonb === 'string' ? JSON.parse(item.content_jsonb || "{}") : (item.content_jsonb || {});
+          return Number(pJson?.serie) === numeroSerie;
+        })
+        .sort((a: any, b: any) => (Number(a.order_index) || 0) - (Number(b.order_index) || 0));
+
+      const localIndex = preguntasSerie.findIndex((item: any) => item.id === q.id);
+      if (localIndex === -1) return;
+      const numPreguntaLocal = localIndex + 1;
+      const numeroGlobal = serieConfig.inicio + (numPreguntaLocal - 1);
+
+      let respuestaUsuario = respuestasJson[q.id];
+      if (respuestaUsuario === undefined || respuestaUsuario === null || respuestaUsuario === "") {
+        mapa.set(numeroGlobal, { resp1: "—", resp2: "—" });
+        return;
+      }
+
+      // Parseo seguro si la respuesta viene como cadena JSON
+      if (typeof respuestaUsuario === 'string' && (respuestaUsuario.startsWith('{') || respuestaUsuario.startsWith('['))) {
+        try {
+          respuestaUsuario = JSON.parse(respuestaUsuario);
+        } catch {}
+      }
+
+      // 1. Serie III (Vocabulario): Mostrar 'i' u 'o'
+      if (numeroSerie === 3) {
+        const valStr = String(respuestaUsuario).trim().toLowerCase();
+        let res = '—';
+        if (valStr.startsWith('ig') || valStr === 'i') res = 'i';
+        else if (valStr.startsWith('op') || valStr === 'o') res = 'o';
+        else res = valStr.charAt(0);
+        mapa.set(numeroGlobal, { resp1: res });
+        return;
+      }
+
+      // 2. Serie IV (Selección Lógica): 2 letras independientes
+      if (numeroSerie === 4) {
+        const opciones = parsed.opciones || parsed.options || parsed.choices || [];
+        if (Array.isArray(respuestaUsuario)) {
+          const letrasElegidas = respuestaUsuario.map((resp: any) => {
+            if (typeof resp === 'string' && resp.length <= 2) return resp.toLowerCase();
+            const idx = opciones.findIndex((opt: any) => {
+              const textoOpt = typeof opt === 'object' ? (opt.texto || opt.label || '') : String(opt);
+              return textoOpt.trim().toLowerCase() === String(resp).trim().toLowerCase();
+            });
+            return idx !== -1 ? String.fromCharCode(97 + idx) : String(resp).charAt(0).toLowerCase();
+          });
+          mapa.set(numeroGlobal, {
+            resp1: letrasElegidas[0] || "—",
+            resp2: letrasElegidas[1] || "—"
+          });
+          return;
+        }
+      }
+
+      // 3. Serie VIII (Ordenación + V/F): Mostrar 'v' o 'f'
+      if (numeroSerie === 8) {
+        if (typeof respuestaUsuario === "object" && respuestaUsuario !== null) {
+          const vf = (respuestaUsuario as any).verdadFalso || (respuestaUsuario as any).vf || (respuestaUsuario as any).respuesta || "";
+          const vfStr = String(vf).trim().toLowerCase();
+          let res = "—";
+          if (vfStr.startsWith('v')) res = 'v';
+          else if (vfStr.startsWith('f')) res = 'f';
+          mapa.set(numeroGlobal, { resp1: res });
+          return;
+        }
+      }
+
+      // 4. Manejo avanzado de objetos para Serie X, oraciones u otros formatos compuestos
+      if (typeof respuestaUsuario === "object" && respuestaUsuario !== null) {
+        if ((respuestaUsuario as any).oracionOrdenada) {
+          mapa.set(numeroGlobal, { resp1: limpiarTexto((respuestaUsuario as any).oracionOrdenada) });
+          return;
+        }
+        if ((respuestaUsuario as any).texto) {
+          mapa.set(numeroGlobal, { resp1: limpiarTexto((respuestaUsuario as any).texto) });
+          return;
+        }
+        
+        // Manejo específico para campos de tipo num1 / num2 (como en Serie X)
+        const n1 = (respuestaUsuario as any).num1 ?? (respuestaUsuario as any).val1 ?? (respuestaUsuario as any).n1 ?? "";
+        const n2 = (respuestaUsuario as any).num2 ?? (respuestaUsuario as any).val2 ?? (respuestaUsuario as any).n2 ?? "";
+        
+        if (n1 !== "" || n2 !== "") {
+          const part1 = n1 !== "" ? String(n1) : "";
+          const part2 = n2 !== "" ? String(n2) : "";
+          const combinado = part1 && part2 ? `${part1}, ${part2}` : part1 || part2;
+          mapa.set(numeroGlobal, { resp1: combinado || "—" });
+          return;
+        }
+
+        mapa.set(numeroGlobal, { resp1: "—" });
+        return;
+      }
+
+      // 5. Series de opción múltiple estándar
+      const opciones = parsed.opciones || parsed.options || parsed.choices || [];
+      if (opciones.length > 0 && [1, 2, 5, 6, 7, 9, 10].includes(numeroSerie)) {
+        const indexEncontrado = opciones.findIndex((opt: any) => {
+          const textoOpt = typeof opt === 'object' ? (opt.texto || opt.label || '') : String(opt);
+          const letraOpt = typeof opt === 'object' ? (opt.letra || '') : '';
+          return (
+            String(respuestaUsuario).trim().toLowerCase() === textoOpt.trim().toLowerCase() ||
+            String(respuestaUsuario).trim().toLowerCase() === letraOpt.trim().toLowerCase()
+          );
+        });
+
+        if (indexEncontrado !== -1) {
+          const optObj = opciones[indexEncontrado];
+          if (typeof optObj === 'object' && optObj.letra) {
+            mapa.set(numeroGlobal, { resp1: optObj.letra.toLowerCase() });
+            return;
+          }
+          mapa.set(numeroGlobal, { resp1: String.fromCharCode(97 + indexEncontrado) });
+          return;
+        }
+      }
+
+      if (Array.isArray(respuestaUsuario)) {
+        mapa.set(numeroGlobal, { resp1: respuestaUsuario.join(", ") });
+        return;
+      }
+
+      mapa.set(numeroGlobal, { resp1: limpiarTexto(respuestaUsuario) || "—" });
     });
-  } catch {
-    // Sin respuestas registradas: la hoja se imprime en blanco.
+  } catch (e) {
+    console.error("Error mapeando respuestas:", e);
   }
   return mapa;
 }
-
-
-
-// ---------------------------------------------------------------------------
-// Dibujo: encabezado general
-// ---------------------------------------------------------------------------
 
 function escribirEncabezadoGeneral(
   doc: jsPDF,
@@ -172,291 +257,165 @@ function escribirEncabezadoGeneral(
 ): number {
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(...COLOR_PRIMARIO);
-  doc.rect(0, 0, pageWidth, 3.5, "F");
+  // Rectángulo vacío en la esquina superior derecha para anotar manualmente el número de respuestas correctas
+  const rectAncho = 24;
+  const rectAlto = 10;
+  const rectX = pageWidth - MARGEN - rectAncho;
+  const rectY = 4;
+  doc.setDrawColor(...COLOR_NEGRO);
+  doc.setLineWidth(0.4);
+  doc.rect(rectX, rectY, rectAncho, rectAlto);
 
+  // Título principal centrado (dejando espacio para el rectángulo de la derecha)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.setTextColor(...COLOR_PRIMARIO);
-  doc.text("TERMAN - MERRIL (HOJA DE RESPUESTAS)", pageWidth / 2, 11, { align: "center" });
+  doc.setTextColor(...COLOR_NEGRO);
+  doc.text("TERMAN - MERRILL (HOJA DE RESPUESTA)", pageWidth / 2, 10, { align: "center" });
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(...COLOR_GRIS);
-  doc.text(
-    "Test de inteligencia - Formato de registro de respuestas por serie",
-    pageWidth / 2,
-    15,
-    { align: "center" }
-  );
-
-  // Caja de datos generales del candidato
-  const cajaY = 16;
+  const cajaY = 15;
   const cajaAlto = 13;
-  doc.setDrawColor(...COLOR_LINEA);
-  doc.setLineWidth(0.3);
-  doc.setFillColor(...COLOR_FONDO_SUAVE);
-  doc.roundedRect(MARGEN, cajaY, pageWidth - MARGEN * 2, cajaAlto, 1.5, 1.5, "FD");
+  const cajaAncho = pageWidth - MARGEN * 2;
 
-  const anchoUtil = pageWidth - MARGEN * 2 - 6;
-  const anchoNombre = Math.min(88, anchoUtil * 0.34);
+  doc.setDrawColor(...COLOR_NEGRO);
+  doc.setLineWidth(0.6);
+  doc.rect(MARGEN, cajaY, cajaAncho, cajaAlto);
 
-  const sexo = limpiarTexto(candidato?.sex) || "—";
-  const nacimiento = candidato?.birth_date
-    ? formatearFechaLarga(candidato.birth_date)
-    : null;
-  const edadCalculada = edadDesdeNacimiento(candidato?.birth_date);
-  const edad =
-    candidato?.age != null
-      ? `${candidato.age} años`
-      : edadCalculada != null
-        ? `${edadCalculada} años`
-        : "—";
+  doc.setLineWidth(0.4);
+  doc.line(MARGEN, cajaY + 6.5, MARGEN + cajaAncho, cajaY + 6.5);
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(...COLOR_GRIS);
-  doc.text("NOMBRE DEL CANDIDATO", MARGEN + 3, cajaY + 4.4);
+  const colFechaX = MARGEN + cajaAncho * 0.65;
+  doc.line(colFechaX, cajaY, colFechaX, cajaY + 6.5);
 
+  // Fila 1: Nombre completo y Fecha de aplicación
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.setTextColor(...COLOR_TEXTO);
-  doc.text(
-    recortar(doc, nombreCompleto(candidato) || "—", anchoNombre - 3),
-    MARGEN + 3,
-    cajaY + 9.2
-  );
-
-  // Los campos mostrados se adaptan a la información disponible del candidato.
-  const campos: { etiqueta: string; valor: string }[] = [
-    { etiqueta: "SEXO", valor: sexo },
-    { etiqueta: "EDAD", valor: edad },
-  ];
-  if (nacimiento) {
-    campos.push({ etiqueta: "FECHA DE NACIMIENTO", valor: nacimiento });
-  }
-  campos.push({ etiqueta: "FECHA DE APLICACIÓN", valor: fechaAplicacion });
-  const registro = limpiarTexto(candidato?.id);
-  if (registro) {
-    campos.push({ etiqueta: "ID EXPEDIENTE", valor: registro });
-  }
-
-  const xCampos = MARGEN + 3 + anchoNombre;
-  const anchoCampos = pageWidth - MARGEN - 3 - xCampos;
-  const anchoCampo = anchoCampos / campos.length;
-
-  campos.forEach((campo, i) => {
-    const x = xCampos + i * anchoCampo;
-    if (i > 0) {
-      doc.setDrawColor(...COLOR_LINEA);
-      doc.setLineWidth(0.2);
-      doc.line(x - 3, cajaY + 2.5, x - 3, cajaY + cajaAlto - 2.5);
-    }
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.5);
-    doc.setTextColor(...COLOR_GRIS);
-    doc.text(campo.etiqueta, x, cajaY + 4.4);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...COLOR_TEXTO);
-    doc.text(recortar(doc, campo.valor, anchoCampo - 3.5), x, cajaY + 9.2);
-  });
-
-  return cajaY + cajaAlto + 2.2;
-}
-
-
-// ---------------------------------------------------------------------------
-// Dibujo: cuadrícula de series
-// ---------------------------------------------------------------------------
-
-/** Recorta el texto para que quepa en el ancho disponible (usa métricas reales). */
-function recortar(doc: jsPDF, texto: string, anchoMm: number): string {
-  if (!texto) return "";
-  const limpio = texto;
-  if (doc.getTextWidth(limpio) <= anchoMm) return limpio;
-  let salida = limpio;
-  while (salida.length > 1 && doc.getTextWidth(`${salida}.`) > anchoMm) {
-    salida = salida.slice(0, -1);
-  }
-  return `${salida}.`;
-}
-
-function dibujarCelda(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  ancho: number,
-  alto: number,
-  numero: number,
-  respuesta: string,
-  respondida: boolean,
-  fontSize: number
-): void {
-  doc.setDrawColor(...COLOR_LINEA);
-  doc.setLineWidth(0.15);
-  doc.rect(x, y, ancho, alto);
-
-  doc.setFillColor(...COLOR_FONDO_SUAVE);
-  doc.rect(x, y, ANCHO_NUM, alto, "F");
-  doc.setDrawColor(...COLOR_LINEA);
-  doc.line(x + ANCHO_NUM, y, x + ANCHO_NUM, y + alto);
+  doc.text("NOMBRE COMPLETO:", MARGEN + 2, cajaY + 4.5);
+  doc.setFont("helvetica", "normal");
+  doc.text(nombreCompleto(candidato) || "—", MARGEN + 38, cajaY + 4.5);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(fontSize);
-  doc.setTextColor(...COLOR_GRIS);
-  doc.text(String(numero), x + ANCHO_NUM / 2, y + alto / 2 + fontSize * 0.36, {
-    align: "center",
-  });
+  doc.text("FECHA DE APLICACIÓN:", colFechaX + 2, cajaY + 4.5);
+  doc.setFont("helvetica", "normal");
+  doc.text(fechaAplicacion, colFechaX + 41, cajaY + 4.5);
 
-  const textoRespuesta = respondida ? respuesta : "";
-  doc.setFont("helvetica", respondida ? "bold" : "italic");
-  doc.setFontSize(respondida ? fontSize : fontSize - 0.5);
-  doc.setTextColor(...(respondida ? COLOR_PRIMARIO : COLOR_LINEA));
-  if (respondida) {
-    const disponible = ancho - ANCHO_NUM - 1.4;
-    doc.text(
-      recortar(doc, textoRespuesta, disponible),
-      x + ANCHO_NUM + 0.7,
-      y + alto / 2 + fontSize * 0.36
-    );
-  } else {
-    doc.text("-", x + ANCHO_NUM + 0.7, y + alto / 2 + fontSize * 0.36);
-  }
+  const col1X = MARGEN + cajaAncho * 0.33;
+  const col2X = MARGEN + cajaAncho * 0.66;
+  doc.line(col1X, cajaY + 6.5, col1X, cajaY + cajaAlto);
+  doc.line(col2X, cajaY + 6.5, col2X, cajaY + cajaAlto);
+
+  const sexo = limpiarTexto(candidato?.sex) || "No especificado";
+  const edad = candidato?.age != null ? `${candidato.age} años` : "N/A";
+  
+  const rawFechaNac = candidato?.Fecha_Nacimiento || candidato?.birth_date;
+  const fechaNac = rawFechaNac
+    ? (() => {
+        const [anio, mes, dia] = String(rawFechaNac).split("T")[0].split("-");
+        return `${dia}/${mes}/${anio}`;
+      })()
+    : "No registrada";
+
+  // Fila 2: Sexo, Fecha de Nacimiento y Edad
+  doc.setFont("helvetica", "bold");
+  doc.text("SEXO:", MARGEN + 2, cajaY + 10.5);
+  doc.setFont("helvetica", "normal");
+  doc.text(sexo, MARGEN + 16, cajaY + 10.5);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("FECHA DE NACIMIENTO:", col1X + 2, cajaY + 10.5);
+  doc.setFont("helvetica", "normal");
+  doc.text(fechaNac, col1X + 42, cajaY + 10.5);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("EDAD:", col2X + 2, cajaY + 10.5);
+  doc.setFont("helvetica", "normal");
+  doc.text(edad, col2X + 16, cajaY + 10.5);
+
+  return cajaY + cajaAlto + 3.5;
 }
 
-
-/**
- * Dibuja la cuadrícula de las 10 series: una columna por serie con la
- * cascada vertical numerada de reactivos y la respuesta registrada.
- */
 function dibujarCuadriculaSeries(
   doc: jsPDF,
-  mapaRespuestas: Map<number, QuestionAnswer>,
+  mapaRespuestas: Map<number, { resp1: string; resp2?: string }>,
   inicioY: number
 ): void {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
   const anchoTotal = pageWidth - MARGEN * 2;
-  const anchoColumna = anchoTotal / SERIES_TERMAN.length;
+  const totalSeries = SERIES_TERMAN.length;
+  
+  const gap = 8; 
+  const espacioTotalGaps = gap * (totalSeries - 1);
+  const anchoColumna = (anchoTotal - espacioTotalGaps) / totalSeries;
 
-  const maxReactivos = Math.max(...SERIES_TERMAN.map((s) => s.cantidad));
-  const altoCabeceraSerie = 9;
-  const altoFila = Math.min(
-    ALTO_FILA,
-    (doc.internal.pageSize.getHeight() - inicioY - altoCabeceraSerie - 13.5) / maxReactivos
-  );
-  const fontSize = altoFila < 6 ? 5.2 : 5.8;
+  const altoCabeceraSerie = 5.5;
+  const yCeldas = inicioY + altoCabeceraSerie;
 
   SERIES_TERMAN.forEach((serie, i) => {
-    const x = MARGEN + i * anchoColumna;
+    const x = MARGEN + i * (anchoColumna + gap);
 
-    doc.setFillColor(...COLOR_PRIMARIO);
-    doc.rect(x, inicioY, anchoColumna, altoCabeceraSerie, "F");
+    doc.setFillColor(...COLOR_GRIS_CABECERA);
+    doc.setDrawColor(...COLOR_NEGRO);
+    doc.setLineWidth(0.4);
+    doc.rect(x, inicioY, anchoColumna, altoCabeceraSerie, "FD");
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text(serie.nombre.toUpperCase(), x + anchoColumna / 2, inicioY + 4, {
-      align: "center",
-    });
+    doc.setFontSize(9.5);
+    doc.setTextColor(...COLOR_NEGRO);
+    doc.text(serie.nombre, x + anchoColumna / 2, inicioY + 3.8, { align: "center" });
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(5.8);
-    doc.setTextColor(214, 231, 240);
-    doc.text(`${serie.minutos} min`, x + anchoColumna / 2, inicioY + 8, { align: "center" });
-
-    doc.setFillColor(...COLOR_FONDO_SUAVE);
-    doc.rect(x, inicioY + altoCabeceraSerie, anchoColumna, 4.6, "F");
-    doc.setDrawColor(...COLOR_LINEA);
-    doc.setLineWidth(0.15);
-    doc.rect(x, inicioY + altoCabeceraSerie, anchoColumna, 4.6);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(5.6);
-    doc.setTextColor(...COLOR_PRIMARIO);
-    doc.text(
-      `${serie.cantidad} reactivos`,
-      x + anchoColumna / 2,
-      inicioY + altoCabeceraSerie + 3.2,
-      { align: "center" }
-    );
-  });
-
-  const yCeldas = inicioY + altoCabeceraSerie + 4.6;
-
-  SERIES_TERMAN.forEach((serie, col) => {
-    const x = MARGEN + col * anchoColumna;
-
-    for (let n = 1; n <= serie.cantidad; n += 1) {
+    for (let n = 1; n <= serie.cantidad; n++) {
       const numeroGlobal = serie.inicio + (n - 1);
       const registro = mapaRespuestas.get(numeroGlobal);
-      const y = yCeldas + (n - 1) * altoFila;
+      const y = yCeldas + (n - 1) * ALTO_FILA;
 
-      dibujarCelda(
-        doc,
-        x,
-        y,
-        anchoColumna,
-        altoFila,
-        n,
-        registro?.respuesta ?? "",
-        Boolean(registro?.respondida),
-        fontSize
-      );
+      doc.setDrawColor(...COLOR_NEGRO);
+      doc.setLineWidth(0.2);
+      doc.rect(x, y, anchoColumna, ALTO_FILA);
 
-      if (serie.bloques) {
-        const finBloque = serie.bloques.find((b) => b.hasta === n);
-        if (finBloque && n < serie.cantidad) {
-          doc.setDrawColor(...COLOR_PRIMARIO);
-          doc.setLineWidth(0.4);
-          doc.line(x, y + altoFila, x + anchoColumna, y + altoFila);
-        }
+      if (serie.clave === "IV") {
+        const wSub = anchoColumna / 3;
+
+        doc.line(x + wSub, y, x + wSub, y + ALTO_FILA);
+        doc.line(x + wSub * 2, y, x + wSub * 2, y + ALTO_FILA);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...COLOR_NEGRO);
+        doc.text(String(n), x + wSub / 2, y + 3.0, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.text(registro?.resp1 || "—", x + wSub + wSub / 2, y + 3.0, { align: "center" });
+        doc.text(registro?.resp2 || "—", x + wSub * 2 + wSub / 2, y + 3.0, { align: "center" });
+      } else {
+        const anchoNumCol = Math.min(ANCHO_NUM, anchoColumna * 0.4);
+        doc.line(x + anchoNumCol, y, x + anchoNumCol, y + ALTO_FILA);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(...COLOR_NEGRO);
+        doc.text(String(n), x + anchoNumCol / 2, y + 3.0, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.text(registro?.resp1 || "—", x + anchoNumCol + (anchoColumna - anchoNumCol) / 2, y + 3.0, {
+          align: "center",
+        });
       }
     }
   });
 
-  const altoCeldas = maxReactivos * altoFila;
-  doc.setDrawColor(...COLOR_PRIMARIO);
-  doc.setLineWidth(0.35);
-  doc.rect(MARGEN, inicioY, anchoTotal, altoCabeceraSerie + 4.6 + altoCeldas);
+  try {
+    const imgWidth = 26;
+    const imgHeight = 13;
+    const imgX = pageWidth - MARGEN - imgWidth;
+    const imgY = pageHeight - MARGEN - imgHeight;
+
+    doc.addImage("/images/FDHZ_2025-Color_Vertical.png", "PNG", imgX, imgY, imgWidth, imgHeight);
+  } catch (e) {
+    console.error("No se pudo cargar la imagen del logo institucional en el PDF", e);
+  }
 }
 
-
-// ---------------------------------------------------------------------------
-// Pie de página
-// ---------------------------------------------------------------------------
-
-function escribirPiePagina(doc: jsPDF): void {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  doc.setDrawColor(...COLOR_LINEA);
-  doc.setLineWidth(0.2);
-  doc.line(MARGEN, pageHeight - 7, pageWidth - MARGEN, pageHeight - 7);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(...COLOR_GRIS);
-  doc.text(
-    "Hoja de respuestas Terman-Merril - Registro de reactivos por subtest",
-    MARGEN,
-    pageHeight - 3.5
-  );
-  doc.text(
-    `Página ${doc.getNumberOfPages()}`,
-    pageWidth - MARGEN,
-    pageHeight - 3.5,
-    { align: "right" }
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Función principal
-// ---------------------------------------------------------------------------
-
-/**
- * Genera la "Hoja de Respuestas de Terman - Merril" en PDF (A4 horizontal),
- * con el encabezado de datos generales y la cuadrícula de las 10 series.
- */
 export function generarPDFHojaRespuestasTerman({
   candidato,
   prueba,
@@ -470,29 +429,16 @@ export function generarPDFHojaRespuestasTerman({
       format: "a4",
     });
 
-    const fecha =
-      formatearFechaLarga(fechaAplicacion || prueba?.started_at || prueba?.completed_at) || "—";
-
+    const fecha = formatearFechaLarga(fechaAplicacion || prueba?.started_at || prueba?.completed_at);
     const yEncabezado = escribirEncabezadoGeneral(doc, candidato, fecha);
-    const mapaRespuestas = mapearRespuestas(prueba);
+    const mapaRespuestas = mapearRespuestasPersonalizadas(prueba);
+
     dibujarCuadriculaSeries(doc, mapaRespuestas, yEncabezado);
 
-    escribirPiePagina(doc);
-
-    const nombreArchivo =
-      limpiarTexto(nombreCompleto(candidato)).replace(/\s+/g, "_").slice(0, 60) ||
-      "candidato";
+    const nombreArchivo = limpiarTexto(nombreCompleto(candidato)).replace(/\s+/g, "_").toLowerCase() || "candidato";
     doc.save(`hoja_terman_${nombreArchivo}.pdf`);
   } catch (err) {
-    console.error("Error al generar la hoja de respuestas Terman:", err);
-    const mensaje =
-      err instanceof Error
-        ? err.message
-        : "No se pudo generar la hoja de respuestas en PDF.";
-    if (onError) {
-      onError(mensaje);
-    } else {
-      alert(mensaje);
-    }
+    console.error("Error al generar PDF de Terman:", err);
+    if (onError) onError("No se pudo generar la hoja de respuestas.");
   }
 }
