@@ -80,6 +80,7 @@ export type Database = {
           age: number
           created_at: string | null
           education_level: string
+          fecha_nacimiento: string | null
           full_name: string
           general_status: Database["public"]["Enums"]["test_status"] | null
           headquarter: string
@@ -94,6 +95,7 @@ export type Database = {
           age: number
           created_at?: string | null
           education_level: string
+          fecha_nacimiento?: string | null
           full_name: string
           general_status?: Database["public"]["Enums"]["test_status"] | null
           headquarter: string
@@ -108,6 +110,7 @@ export type Database = {
           age?: number
           created_at?: string | null
           education_level?: string
+          fecha_nacimiento?: string | null
           full_name?: string
           general_status?: Database["public"]["Enums"]["test_status"] | null
           headquarter?: string

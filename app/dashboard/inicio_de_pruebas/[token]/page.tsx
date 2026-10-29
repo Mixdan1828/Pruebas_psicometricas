@@ -24,6 +24,7 @@ interface FormData {
   sede: string;
   estado_civil: string;
   escolaridad: string;
+  fecha_nacimiento: string;
 }
 
 interface LinkData {
@@ -80,6 +81,11 @@ const DemographicsForm = memo(function DemographicsForm({
               <input id="apellido_paterno" required type="text" name="apellido_paterno" placeholder="A. Paterno" value={formData.apellido_paterno} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
               <input id="apellido_materno" type="text" name="apellido_materno" placeholder="A. Materno" value={formData.apellido_materno} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="fecha_nacimiento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Fecha de nacimiento</label>
+            <input id="fecha_nacimiento" required type="date" name="fecha_nacimiento" value={formData.fecha_nacimiento} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -180,6 +186,7 @@ export default function BienvenidaEvaluacion() {
     sede: '',
     estado_civil: '',
     escolaridad: '',
+    fecha_nacimiento: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -239,6 +246,7 @@ export default function BienvenidaEvaluacion() {
           sede: formData.sede,
           estado_civil: formData.estado_civil,
           escolaridad: formData.escolaridad,
+          fecha_nacimiento: formData.fecha_nacimiento,
         }),
       });
 
@@ -250,6 +258,8 @@ export default function BienvenidaEvaluacion() {
 
       const nombreCompleto = `${formData.nombre} ${formData.apellido_paterno} ${formData.apellido_materno || ''}`.trim();
       localStorage.setItem('candidato_nombre', nombreCompleto);
+      localStorage.setItem('candidato_apellido_paterno', formData.apellido_paterno);
+      localStorage.setItem('candidato_apellido_materno', formData.apellido_materno);
       localStorage.setItem('token_actual', token);
 
       router.push(`/dashboard/inicio_de_pruebas/${token}/resolver`);
