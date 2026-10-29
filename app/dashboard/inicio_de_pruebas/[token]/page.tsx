@@ -24,7 +24,7 @@ interface FormData {
   sede: string;
   estado_civil: string;
   escolaridad: string;
-  fecha_nacimiento: string;
+  Fecha_Nacimiento: string;
 }
 
 interface LinkData {
@@ -84,8 +84,8 @@ const DemographicsForm = memo(function DemographicsForm({
           </div>
 
           <div>
-            <label htmlFor="fecha_nacimiento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Fecha de nacimiento</label>
-            <input id="fecha_nacimiento" required type="date" name="fecha_nacimiento" value={formData.fecha_nacimiento} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
+            <label htmlFor="Fecha_Nacimiento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Fecha de nacimiento</label>
+            <input id="Fecha_Nacimiento" required type="date" name="Fecha_Nacimiento" value={formData.Fecha_Nacimiento} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -186,7 +186,7 @@ export default function BienvenidaEvaluacion() {
     sede: '',
     estado_civil: '',
     escolaridad: '',
-    fecha_nacimiento: '',
+    Fecha_Nacimiento: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -246,7 +246,7 @@ export default function BienvenidaEvaluacion() {
           sede: formData.sede,
           estado_civil: formData.estado_civil,
           escolaridad: formData.escolaridad,
-          fecha_nacimiento: formData.fecha_nacimiento,
+          Fecha_Nacimiento: formData.Fecha_Nacimiento,
         }),
       });
 

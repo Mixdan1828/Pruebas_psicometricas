@@ -119,7 +119,7 @@ export async function POST(request: Request) {
         headquarter: sede,
         marital_status: estadoCivil,
         education_level: escolaridad,
-        fecha_nacimiento: fechaNacimiento || null,
+        Fecha_Nacimiento: fechaNacimiento || null,
       } as any)
       .select('id')
       .single();
