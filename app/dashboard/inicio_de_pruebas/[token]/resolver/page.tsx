@@ -70,6 +70,14 @@ export default function ResolverOrchestrator() {
   const [phase, setPhase] = useState<FetchPhase>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
+  const [patientName, setPatientName] = useState('Candidato');
+
+  // Recupera el nombre del candidato capturado en el registro (flujo temporal entre pantallas)
+  useEffect(() => {
+    if (typeof localStorage === 'undefined') return;
+    const saved = localStorage.getItem('candidato_nombre');
+    if (saved) setPatientName(saved);
+  }, []);
 
   const loadTests = useCallback(async () => {
     console.log('[resolver] Token recibido desde URL:', token);
@@ -257,9 +265,8 @@ export default function ResolverOrchestrator() {
 
             return (
               <TestFinalizedView
-                patientName="Candidato"
+                patientName={patientName}
                 testNames={completedTestsNames}
-                timeElapsed="Completado con éxito"
                 onGoHome={() => window.location.href = '/'}
                 
               />

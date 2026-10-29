@@ -12,6 +12,11 @@
 --    resultante de este INSERT (ver nota al final).
 -- ============================================================================
 
+-- Columna de fecha de nacimiento en la tabla de candidatos
+-- (requerida por el flujo de registro de pruebas psicométricas)
+alter table public.candidates
+add column if not exists fecha_nacimiento date;
+
 insert into public.tests (name, description, category, type, tiempo, config_json)
 values (
   'NOM-035-STPS-2018 (Evaluación Integral)',

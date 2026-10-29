@@ -12,6 +12,7 @@ interface RegisterBody {
   sede?: string;
   estado_civil?: string;
   escolaridad?: string;
+  fecha_nacimiento?: string;
 }
 
 /**
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
     const sede = (body.sede ?? '').trim();
     const estadoCivil = (body.estado_civil ?? '').trim();
     const escolaridad = (body.escolaridad ?? '').trim();
+    const fechaNacimiento = (body.fecha_nacimiento ?? '').trim();
 
     if (
       !nombre ||
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
         headquarter: sede,
         marital_status: estadoCivil,
         education_level: escolaridad,
+        fecha_nacimiento: fechaNacimiento || null,
       } as any)
       .select('id')
       .single();

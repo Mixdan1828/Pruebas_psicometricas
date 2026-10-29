@@ -89,7 +89,6 @@ export default function TestFinalizedView({ patientName: initialPatientName, tes
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
             {/* Cuadro Paciente */}
             <div className="p-4 rounded-xl space-y-1" style={{ backgroundColor: '#f0eded' }}>
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#434749' }}>Paciente / Candidato</span>
               <p className="text-base font-headline font-bold" style={{ color: '#001E28' }}>{patientName}</p>
             </div>
             {/* Cuadro Tiempo */}
