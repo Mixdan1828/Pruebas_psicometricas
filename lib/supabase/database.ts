@@ -90,6 +90,7 @@ export type Database = {
           maternal_surname: string
           paternal_surname: string
           sex: string
+          Fecha_Nacimiento: string | null
         }
         Insert: {
           age: number
@@ -105,6 +106,7 @@ export type Database = {
           maternal_surname: string
           paternal_surname: string
           sex: string
+          Fecha_Nacimiento?: string | null
         }
         Update: {
           age?: number
@@ -120,6 +122,7 @@ export type Database = {
           maternal_surname?: string
           paternal_surname?: string
           sex?: string
+          Fecha_Nacimiento?: string | null
         }
         Relationships: [
           {

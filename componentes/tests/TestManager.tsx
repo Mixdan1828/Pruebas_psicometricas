@@ -140,7 +140,7 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
       <TestFinalizedView 
         patientName={resolvedPatientName}
         testNames={completedTestsNames}
-        timeElapsed={timeElapsedStr}
+        dateCompleted={timeElapsedStr}
         onGoHome={() => window.location.href = '/'}
         
       />
