@@ -5,11 +5,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-import {
-  generarPDFHojaRespuestasTerman,
-  esTestTerman,
-} from "./generarPDFTerman";
-
+import { generarPDFHojaRespuestasTerman, esTestTerman,} from "./pdf/generarPDFTerman";
+import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
 // Importamos el modal modular y el SideNavBar
 import { ModalVistaPreviaPruebas } from "./ModalVistaPreviaPruebas";
 import SideNavBar from "@/componentes/SideNavBar";
@@ -291,35 +288,68 @@ function DetalleCandidatoContent() {
     }
   };
 
+  // Importa también las funciones de verificación y generación de Cleaver arriba si las usas:
+  // import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
+
   const handleDescargarResultados = async () => {
     if (isGeneratingPDF) return;
     setIsGeneratingPDF(true);
     setFeedback(null);
+
     try {
-      const pruebaTerman = pruebas.find((p) => esTestTerman(p));
-      if (pruebaTerman && candidato) {
-        generarPDFHojaRespuestasTerman({
-          candidato: {
-            full_name: candidato.full_name,
-            paternal_surname: candidato.paternal_surname,
-            maternal_surname: candidato.maternal_surname,
-            age: candidato.age,
-            sex: candidato.sex,
-            birth_date: candidato.birth_date,
-            id: candidato.id,
-          },
-          prueba: pruebaTerman,
-          fechaAplicacion: pruebaTerman.started_at || pruebaTerman.completed_at,
-          onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
-        });
-      } else {
+      if (!candidato || pruebas.length === 0) {
         setFeedback({
           tipo: "error",
-          mensaje: "No se encontró una prueba de Terman válida para generar el PDF.",
+          mensaje: "No hay pruebas ni datos suficientes para generar el PDF.",
+        });
+        setIsGeneratingPDF(false);
+        return;
+      }
+
+      // Variable base común para el candidato
+      const datosCandidato = {
+        full_name: candidato.full_name,
+        paternal_surname: candidato.paternal_surname,
+        maternal_surname: candidato.maternal_surname,
+        age: candidato.age,
+        sex: candidato.sex,
+        birth_date: candidato.birth_date,
+        Fecha_Nacimiento: (candidato as any).Fecha_Nacimiento,
+        id: candidato.id,
+      };
+
+      let pdfGenerado = false;
+
+      // Iteramos sobre las pruebas del candidato y ejecutamos el generador correspondiente de forma secuencial o unificada
+      for (const prueba of pruebas) {
+        if (esTestTerman(prueba)) {
+          generarPDFHojaRespuestasTerman({
+            candidato: datosCandidato,
+            prueba: prueba,
+            fechaAplicacion: prueba.started_at || prueba.completed_at,
+            onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
+          });
+          pdfGenerado = true;
+        } else if (esTestClaver(prueba)) {
+          generarPDFHojaRespuestasClaver({
+            candidato: datosCandidato,
+            prueba: prueba,
+            fechaAplicacion: prueba.started_at || prueba.completed_at,
+            onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
+          });
+          pdfGenerado = true;
+        }
+        // Aquí puedes agregar más `else if` conforme vayas integrando otros tests (ej. Moss, Kostick, etc.)
+      }
+
+      if (!pdfGenerado) {
+        setFeedback({
+          tipo: "error",
+          mensaje: "No se encontró un formato de reporte compatible con las pruebas de este candidato.",
         });
       }
     } catch (err) {
-      console.error("Error al generar el PDF:", err);
+      console.error("Error al generar el PDF unificado:", err);
       setFeedback({
         tipo: "error",
         mensaje: "No se pudo generar el reporte en PDF.",
