@@ -104,27 +104,27 @@ const DemographicsForm = memo(function DemographicsForm({
             </div>
           </div>
 
+          {/* Sede de Evaluación corregida con los valores exactos */}
           <div>
             <label htmlFor="sede" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sede de Evaluación</label>
             <select id="sede" required name="sede" value={formData.sede} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]">
               <option value="">Selecciona tu sede correspondiente...</option>
-              <option value="Sede Central Orizaba">Puerta Grande</option>
-              <option value="Sede Córdoba">Tierra blanca</option>
-              <option value="Sede Veracruz Puerto">Torre Diez Sede</option>
-              <option value="Sede Veracruz Puerto">Torre Diez Oficinas</option>
-              <option value="Sede Veracruz Puerto">EMiliano Zarranza</option>
-              <option value="Sede Veracruz Puerto">Coatepec 1</option>
-              <option value="Sede Veracruz Puerto">Coatepec 2</option>
-              <option value="Sede Veracruz Puerto">Coatzacalcos</option>
-              <option value="Sede Veracruz Puerto">Cosamaloapan</option>
-              <option value="Sede Veracruz Puerto">Acayucan</option>
-              <option value="Sede Veracruz Puerto">CD de Mexico</option>
-              <option value="Sede Veracruz Puerto">Tuxtepec</option>
-              <option value="Sede Veracruz Puerto">Consultorios</option>
-              <option value="Sede Veracruz Puerto">Cancha</option>
-              <option value="Sede Veracruz Puerto">Merida</option>
-              <option value="Sede Veracruz Puerto">Boca del rio</option>
-              
+              <option value="Puerta Grande">Puerta Grande</option>
+              <option value="Tierra blanca">Tierra blanca</option>
+              <option value="Torre Diez Sede">Torre Diez Sede</option>
+              <option value="Torre Diez Oficinas">Torre Diez Oficinas</option>
+              <option value="EMiliano Zarranza">EMiliano Zarranza</option>
+              <option value="Coatepec 1">Coatepec 1</option>
+              <option value="Coatepec 2">Coatepec 2</option>
+              <option value="Coatzacoalcos">Coatzacoalcos</option>
+              <option value="Cosamaloapan">Cosamaloapan</option>
+              <option value="Acayucan">Acayucan</option>
+              <option value="CD de Mexico">CD de Mexico</option>
+              <option value="Tuxtepec">Tuxtepec</option>
+              <option value="Consultorios">Consultorios</option>
+              <option value="Cancha">Cancha</option>
+              <option value="Merida">Merida</option>
+              <option value="Boca del rio">Boca del rio</option>
             </select>
           </div>
 
@@ -202,8 +202,6 @@ export default function BienvenidaEvaluacion() {
       }
 
       try {
-        // Validación en el SERVIDOR (service role, omite RLS):
-        // el candidato no tiene sesión y la anon key no puede leer `links`.
         const res = await fetch(`/api/candidate-link?token=${encodeURIComponent(token)}`);
         const payload = await res.json().catch(() => ({}));
 
@@ -230,8 +228,6 @@ export default function BienvenidaEvaluacion() {
     try {
       if (!linkInfo) throw new Error('Enlace no disponible.');
 
-      // Registro en el SERVIDOR (service role, omite RLS):
-      // verifica cupo, crea candidate + candidate_results y actualiza current_users.
       const res = await fetch('/api/candidate-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
