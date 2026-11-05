@@ -5,6 +5,7 @@ import TestFinalizedView from './TestFinalizedView';
 import CleaverView from './CleaverView';
 import TermanView from './termanView'; // Asegúrate de importar tus vistas
 import Nom035IntegralView from './Nom035IntegralView';
+import RavenView from './RavenView'; // Importa la vista de Raven
 
 interface TestItem {
   id: string;
@@ -171,6 +172,17 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
     if (testIdentifier.includes('nom-035') || testIdentifier.includes('nom035') || testIdentifier.includes('integral')) {
       return (
         <Nom035IntegralView 
+          key={viewKey}
+          testData={currentTest} 
+          onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 
+        />
+      );
+    }
+
+    // Test de Raven (Matrices Progresivas)
+    if (testIdentifier.includes('raven')) {
+      return (
+        <RavenView 
           key={viewKey}
           testData={currentTest} 
           onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 

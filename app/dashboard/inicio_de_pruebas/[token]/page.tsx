@@ -111,6 +111,7 @@ const DemographicsForm = memo(function DemographicsForm({
               <option value="">Selecciona tu sede correspondiente...</option>
               <option value="Puerta Grande">Puerta Grande</option>
               <option value="Tierra blanca">Tierra blanca</option>
+              <option value="Tlapacoyan">Tlapacoyan</option>
               <option value="Torre Diez Sede">Torre Diez Sede</option>
               <option value="Torre Diez Oficinas">Torre Diez Oficinas</option>
               <option value="EMiliano Zarranza">EMiliano Zarranza</option>

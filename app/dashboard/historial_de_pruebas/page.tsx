@@ -4,12 +4,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
-  Download, 
   CalendarDays, 
   ChevronDown, 
   Filter, 
   Eye, 
-  FileDown, 
   ChevronLeft, 
   ChevronRight, 
   TrendingUp,
@@ -76,10 +74,8 @@ export default function HistorialPruebas() {
             ? `${candidate.full_name || ''} ${candidate.paternal_surname || ''} ${candidate.maternal_surname || ''}`.trim()
             : 'Candidato Desconocido';
 
-          // Dentro de tu useEffect o la función que procesa los datos en page.tsx:
-            const sedeCandidate = candidate?.headquarter ? String(candidate.headquarter).trim() : 'Sin sede';
-            sedesSet.add(sedeCandidate);
-            sede:sedeCandidate
+          const sedeCandidate = candidate?.headquarter ? String(candidate.headquarter).trim() : 'Sin sede';
+          sedesSet.add(sedeCandidate);
 
           const nameParts = fullCandidateName.split(' ').filter(Boolean);
           const iniciales = nameParts.length >= 2 
@@ -209,22 +205,6 @@ export default function HistorialPruebas() {
     router.push(`/dashboard/resultados?id=${candidateId}`);
   };
 
-  const handleDescargarRespuestas = async (e: React.MouseEvent, item: TestItem) => {
-    e.stopPropagation();
-    try {
-      const { error } = await supabase
-        .from('candidate_results')
-        .select('answers_json')
-        .eq('id', item.id)
-        .single();
-
-      if (error) throw error;
-      alert(`Descargando respuestas de la prueba #${item.id}`);
-    } catch (err) {
-      console.error('Error al descargar:', err);
-    }
-  };
-
   // Abrir modal de confirmación para eliminar
   const confirmarEliminacion = (e: React.MouseEvent, item: TestItem) => {
     e.stopPropagation();
@@ -239,7 +219,6 @@ export default function HistorialPruebas() {
       setDeleting(true);
       await eliminarPruebaYResultado(itemToDelete.id, itemToDelete.candidateId);
       
-      // Si el servicio se ejecuta con éxito, actualizamos la vista
       setPruebasData((prev) => prev.filter((p) => p.id !== itemToDelete.id));
       setShowDeleteModal(false);
       setItemToDelete(null);
@@ -285,7 +264,6 @@ export default function HistorialPruebas() {
                   <h1 className="text-3xl font-black tracking-tight text-[#123440] mb-2">Historial de Pruebas</h1>
                   <p className="text-slate-500 text-sm leading-relaxed">Acceda y gestione el registro completo de análisis clínicos y psicométricos agrupados por paciente.</p>
                 </div>
-                <button className="flex items-center gap-2 bg-[#123440] hover:bg-[#1a4a5c] text-white px-5 py-2.5 rounded-xl transition-all font-bold text-xs shadow-sm cursor-pointer"><Download size={16} /><span>Exportar Reporte General</span></button>
               </div>
             </section>
 
@@ -315,7 +293,7 @@ export default function HistorialPruebas() {
                 </div>
               </div>
 
-              {/* Selector de Sede Actualizado */}
+              {/* Selector de Sede */}
               <div className="bg-white px-4 py-2 rounded-xl flex items-center gap-2 border border-slate-100 shadow-sm">
                 <Filter size={16} className="text-[#69943A]" />
                 <select 
@@ -369,7 +347,6 @@ export default function HistorialPruebas() {
                               <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center justify-end gap-1">
                                   <button onClick={() => handleVerDetalles(item.candidateId)} className="p-1.5 text-[#123440] hover:bg-slate-100 rounded-lg cursor-pointer" title="Ver Detalles"><Eye size={16} /></button>
-                                  <button onClick={(e) => handleDescargarRespuestas(e, item)} className="p-1.5 text-[#69943A] hover:bg-slate-100 rounded-lg cursor-pointer" title="Descargar"><FileDown size={16} /></button>
                                   {/* Botón de Eliminar */}
                                   <button onClick={(e) => confirmarEliminacion(e, item)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer" title="Eliminar Registro"><Trash2 size={16} /></button>
                                 </div>
