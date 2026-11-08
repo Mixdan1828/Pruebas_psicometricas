@@ -1,9 +1,8 @@
-// app/dashboard/resultados/vistas-previas/RavenView.tsx (o ruta correspondiente)
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, ArrowRight, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Sparkles } from 'lucide-react';
 
 interface RavenViewProps {
   testData: any;
@@ -119,129 +118,136 @@ export default function RavenView({ testData, onComplete }: RavenViewProps) {
   const porcentajeProgreso = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       
-      {/* TÍTULO DEL TEST Y CRONÓMETRO */}
-      <div className="flex flex-wrap justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-        <div>
-          <h2 className="text-sm font-extrabold text-[#123440] uppercase tracking-wide">
+      {/* 🌟 TÍTULO PRINCIPAL DESTACADO EN LA PARTE SUPERIOR */}
+      <div className="bg-[#123440] text-white rounded-2xl p-6 shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="space-y-1 text-center sm:text-left">
+          <div className="inline-flex items-center gap-1.5 bg-[#70a444] text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full">
+            <Sparkles size={12} /> Evaluación Psicométrica Activa
+          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
             Test de Matrices Progresivas de Raven
-          </h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">
-            Selecciona la opción correcta que completa el patrón visual.
+          </h1>
+          <p className="text-xs text-slate-300">
+            Mide la capacidad de razonamiento analógico, percepción y abstracción.
           </p>
         </div>
-        
-        {/* Contador de Tiempo */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border font-mono text-xs font-bold ${
-          timeLeft < 180 ? 'bg-rose-50 text-rose-600 border-rose-200 animate-pulse' : 'bg-white text-[#123440] border-slate-200'
+
+        {/* Cronómetro Global Integrado en el Banner */}
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-mono text-xs font-bold shadow-inner shrink-0 ${
+          timeLeft < 180 ? 'bg-rose-500 text-white border-rose-400 animate-pulse' : 'bg-white/10 text-white border-white/20'
         }`}>
-          <Clock size={15} />
-          <span>Tiempo Restante: {formatTime(timeLeft)}</span>
+          <Clock size={16} />
+          <span>Tiempo: {formatTime(timeLeft)}</span>
         </div>
       </div>
 
-      {/* CABECERA DE PROGRESO Y SERIE */}
-      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md uppercase">
-            Serie {currentQuestion.content_jsonb?.serie || 'A'}
-          </span>
-          <h3 className="font-headline font-bold text-[#123440] text-sm">
-            Reactivo {currentIndex + 1} de {questions.length}
-          </h3>
-        </div>
-        <span className="text-xs text-slate-400 font-bold">
-          {porcentajeProgreso}% Completado
-        </span>
-      </div>
+      {/* CONTENEDOR PRINCIPAL DE LA PREGUNTA */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
 
-      {/* BARRA DE PROGRESO */}
-      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-        <div 
-          className="bg-[#123440] h-full transition-all duration-300"
-          style={{ width: `${porcentajeProgreso}%` }}
-        />
-      </div>
-
-      <p className="text-xs font-bold text-[#123440] text-center">
-        {currentQuestion.content_jsonb?.pregunta || 'Selecciona la figura que completa la matriz correctamente:'}
-      </p>
-
-      {/* IMAGEN PRINCIPAL DE LA MATRIZ (AGRANDADA) */}
-      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center space-y-2">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Matriz Principal</span>
-        {currentQuestion.content_jsonb?.imagen_principal && (
-          <div className="relative w-full max-w-[420px] h-64 sm:h-72">
-            <Image 
-              src={currentQuestion.content_jsonb.imagen_principal} 
-              alt="Matriz Raven" 
-              fill 
-              className="object-contain rounded-xl border border-slate-200 bg-white shadow-sm"
-            />
+        {/* CABECERA DE PROGRESO Y SERIE */}
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md uppercase">
+              Serie {currentQuestion.content_jsonb?.serie || 'A'}
+            </span>
+            <h3 className="font-headline font-bold text-[#123440] text-sm">
+              Reactivo {currentIndex + 1} de {questions.length}
+            </h3>
           </div>
-        )}
-      </div>
-
-      {/* OPCIONES DE RESPUESTA VISUALES (AGRANDADAS) */}
-      <div className="space-y-3">
-        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Selecciona una opción:</span>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-          {currentQuestion.content_jsonb?.opciones?.map((op: any, i: number) => {
-            const opcionId = op.opcion || op.letra || String(i + 1);
-            const textoOpcion = op.texto || op.text || '';
-            const isSelected = selectedOption === opcionId;
-
-            return (
-              <div 
-                key={i}
-                onClick={() => handleSelect(opcionId)}
-                className={`cursor-pointer bg-white rounded-2xl p-3 border-2 text-center transition-all flex flex-col items-center ${
-                  isSelected 
-                    ? 'border-indigo-600 shadow-md bg-indigo-50/30 ring-2 ring-indigo-600/20' 
-                    : 'border-slate-200 hover:border-slate-300 shadow-xs'
-                }`}
-              >
-                <span className="text-xs font-bold text-slate-700 mb-1.5 bg-slate-100 px-2 py-0.5 rounded-full">{opcionId}</span>
-                {textoOpcion.startsWith('http') ? (
-                  <div className="relative w-full h-24 sm:h-28 bg-white rounded-lg">
-                    <Image 
-                      src={textoOpcion} 
-                      alt={`Opción ${opcionId}`} 
-                      fill 
-                      className="object-contain rounded-md"
-                    />
-                  </div>
-                ) : (
-                  <span className="text-xs font-bold text-[#123440]">{textoOpcion}</span>
-                )}
-              </div>
-            );
-          })}
+          <span className="text-xs text-slate-400 font-bold">
+            {porcentajeProgreso}% Completado
+          </span>
         </div>
+
+        {/* BARRA DE PROGRESO */}
+        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div 
+            className="bg-[#123440] h-full transition-all duration-300"
+            style={{ width: `${porcentajeProgreso}%` }}
+          />
+        </div>
+
+        <p className="text-xs font-bold text-[#123440] text-center">
+          {currentQuestion.content_jsonb?.pregunta || 'Selecciona la figura que completa la matriz correctamente:'}
+        </p>
+
+        {/* IMAGEN PRINCIPAL DE LA MATRIZ (AGRANDADA) */}
+        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center space-y-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Matriz Principal</span>
+          {currentQuestion.content_jsonb?.imagen_principal && (
+            <div className="relative w-full max-w-[420px] h-64 sm:h-72">
+              <Image 
+                src={currentQuestion.content_jsonb.imagen_principal} 
+                alt="Matriz Raven" 
+                fill 
+                className="object-contain rounded-xl border border-slate-200 bg-white shadow-sm"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* OPCIONES DE RESPUESTA VISUALES (AGRANDADAS) */}
+        <div className="space-y-3">
+          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Selecciona una opción:</span>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {currentQuestion.content_jsonb?.opciones?.map((op: any, i: number) => {
+              const opcionId = op.opcion || op.letra || String(i + 1);
+              const textoOpcion = op.texto || op.text || '';
+              const isSelected = selectedOption === opcionId;
+
+              return (
+                <div 
+                  key={i}
+                  onClick={() => handleSelect(opcionId)}
+                  className={`cursor-pointer bg-white rounded-2xl p-3 border-2 text-center transition-all flex flex-col items-center ${
+                    isSelected 
+                      ? 'border-indigo-600 shadow-md bg-indigo-50/30 ring-2 ring-indigo-600/20' 
+                      : 'border-slate-200 hover:border-slate-300 shadow-xs'
+                  }`}
+                >
+                  <span className="text-xs font-bold text-slate-700 mb-1.5 bg-slate-100 px-2 py-0.5 rounded-full">{opcionId}</span>
+                  {textoOpcion.startsWith('http') ? (
+                    <div className="relative w-full h-24 sm:h-28 bg-white rounded-lg">
+                      <Image 
+                        src={textoOpcion} 
+                        alt={`Opción ${opcionId}`} 
+                        fill 
+                        className="object-contain rounded-md"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold text-[#123440]">{textoOpcion}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* BOTONES DE NAVEGACIÓN (ANTERIOR Y SIGUIENTE) */}
+        <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+          <button 
+            onClick={handleAnteriorPregunta}
+            disabled={currentIndex === 0}
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl font-headline font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+          >
+            <ArrowLeft size={14} />
+            <span>Anterior</span>
+          </button>
+
+          <button 
+            onClick={handleSiguientePregunta}
+            disabled={!selectedOption}
+            className="bg-[#123440] hover:bg-[#1a4a5c] text-white px-6 py-2.5 rounded-xl font-headline font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
+          >
+            <span>{currentIndex === questions.length - 1 ? 'Finalizar y Guardar' : 'Siguiente Reactivo'}</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+
       </div>
-
-      {/* BOTONES DE NAVEGACIÓN (ANTERIOR Y SIGUIENTE) */}
-      <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-        <button 
-          onClick={handleAnteriorPregunta}
-          disabled={currentIndex === 0}
-          className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl font-headline font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-xs"
-        >
-          <ArrowLeft size={14} />
-          <span>Anterior</span>
-        </button>
-
-        <button 
-          onClick={handleSiguientePregunta}
-          disabled={!selectedOption}
-          className="bg-[#123440] hover:bg-[#1a4a5c] text-white px-6 py-2.5 rounded-xl font-headline font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm"
-        >
-          <span>{currentIndex === questions.length - 1 ? 'Finalizar y Guardar' : 'Siguiente Reactivo'}</span>
-          <ArrowRight size={14} />
-        </button>
-      </div>
-
     </div>
   );
 }

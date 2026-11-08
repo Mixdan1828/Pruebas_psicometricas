@@ -13,6 +13,7 @@ interface RegisterBody {
   estado_civil?: string;
   escolaridad?: string;
   fecha_nacimiento?: string;
+  Fecha_Nacimiento?: string; // <-- Agregado para soportar mayúsculas
 }
 
 /**
@@ -43,7 +44,9 @@ export async function POST(request: Request) {
     const sede = (body.sede ?? '').trim();
     const estadoCivil = (body.estado_civil ?? '').trim();
     const escolaridad = (body.escolaridad ?? '').trim();
-    const fechaNacimiento = (body.fecha_nacimiento ?? '').trim();
+    
+    // Capturamos tanto la versión en minúsculas como en mayúsculas
+    const fechaNacimiento = (body.fecha_nacimiento ?? body.Fecha_Nacimiento ?? '').trim();
 
     if (
       !nombre ||
