@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 import { generarPDFHojaRespuestasTerman, esTestTerman,} from "./pdf/generarPDFTerman";
 import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
+import { generarPDFHojaRespuestasRaven, esTestRaven } from "./pdf/generarPDFRaven";
 // Importamos el modal modular y el SideNavBar
 import { ModalVistaPreviaPruebas } from "./ModalVistaPreviaPruebas";
 import SideNavBar from "@/componentes/SideNavBar";
@@ -338,8 +339,15 @@ function DetalleCandidatoContent() {
             onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
           });
           pdfGenerado = true;
+        } else if (esTestRaven(prueba)) { // <--- Añade este bloque
+          generarPDFHojaRespuestasRaven({
+            candidato: datosCandidato,
+            prueba: prueba,
+            fechaAplicacion: prueba.started_at || prueba.completed_at,
+            onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
+          });
+          pdfGenerado = true;
         }
-        // Aquí puedes agregar más `else if` conforme vayas integrando otros tests (ej. Moss, Kostick, etc.)
       }
 
       if (!pdfGenerado) {

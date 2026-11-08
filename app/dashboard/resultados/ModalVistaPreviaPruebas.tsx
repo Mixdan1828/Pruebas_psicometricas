@@ -5,8 +5,10 @@ import React, { useState, useRef } from 'react';
 import { Eye, X, ArrowLeft, Download } from 'lucide-react';
 import { generarPDFHojaRespuestasTerman, esTestTerman } from './pdf/generarPDFTerman';
 import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
+import { generarPDFHojaRespuestasRaven, esTestRaven } from "./pdf/generarPDFRaven";
 import { VistaPreviaTerman } from "./vistas-previas/VistaPreviaTerman";
 import { VistaPreviaClaver } from "./vistas-previas/VistaPreviClaver";
+import VistaPreviaRaven from "./vistas-previas/VistaPreviaRaven";
 
 interface ModalVistaPreviaProps {
   isOpen: boolean;
@@ -50,6 +52,16 @@ export function ModalVistaPreviaPruebas({
 
     if (esTestClaver(pruebaSeleccionada)) {
       generarPDFHojaRespuestasClaver({
+        candidato: candidato,
+        prueba: pruebaSeleccionada,
+        fechaAplicacion: fechaApp,
+        onError: (mensaje) => alert(mensaje),
+      });
+      return;
+    }
+
+    if (esTestRaven(pruebaSeleccionada)) {
+      generarPDFHojaRespuestasRaven({
         candidato: candidato,
         prueba: pruebaSeleccionada,
         fechaAplicacion: fechaApp,
@@ -205,6 +217,12 @@ export function ModalVistaPreviaPruebas({
                     candidato={candidato}
                     prueba={pruebaSeleccionada}
                     formatearFecha={formatearFecha}  
+                  />
+                ) : esTestRaven(pruebaSeleccionada) ? (
+                  <VistaPreviaRaven
+                    candidato={candidato}
+                    prueba={pruebaSeleccionada}
+                    formatearFecha={formatearFecha}
                   />
                 ) : (
                   <p className="text-sm text-slate-500 text-center py-8">
