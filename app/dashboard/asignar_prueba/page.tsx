@@ -5,11 +5,13 @@ import { nanoid } from 'nanoid';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Brain, UserSearch, TrendingUp, Activity, ClipboardList, Users, Link2, 
-  CheckCircle2, RefreshCw, Copy, Search, Bell, ShieldAlert, Eye, Trash2, Grid
+  CheckCircle2, RefreshCw, Copy, Search, Eye, Trash2, Grid,ShieldAlert, Settings
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import SideNavBar from '../../../componentes/SideNavBar';
+import SideNavBar from '../../componentes/SideNavBar';
 import TestPreviewModal from './TestPreviewModal';
+import ModalConfiguracionPerfil from '@/app/componentes/ModalConfiguracionPerfil';
+import NotificadorTiempoReal from '@/app/componentes/NotificadorTiempoReal';
 
 interface IconMeta {
   icon: LucideIcon;
@@ -42,15 +44,43 @@ export default function AsignarPrueba() {
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Estados para usuario, perfil y colapso del sidebar
+  const [userName, setUserName] = useState('Usuario');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   // Estados para el Modal de Previsualización
   const [modalOpen, setModalOpen] = useState(false);
   const [previewTest, setPreviewTest] = useState<any>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
+  const cargarDatosUsuario = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setUserName(profileData.full_name || 'Usuario');
+        setAvatarUrl(profileData.avatar_url || null);
+      }
+    } catch (error) {
+      console.error('Error al cargar perfil del usuario:', error);
+    }
+  };
+
   useEffect(() => {
-    async function cargarCatalogo() {
+    async function cargarCatalogoYUsuario() {
       try {
+        await cargarDatosUsuario();
+
         const { data, error } = await supabase
           .from('tests')
           .select('*')
@@ -67,7 +97,7 @@ export default function AsignarPrueba() {
         setLoading(false);
       }
     }
-    cargarCatalogo();
+    cargarCatalogoYUsuario();
   }, [supabase]);
 
   const toggleTestSelection = (prueba: any) => {
@@ -208,7 +238,11 @@ export default function AsignarPrueba() {
 
   return (
     <div className="bg-[#f9f9f7] text-[#202221] flex min-h-screen font-sans overflow-x-hidden relative">
-      <SideNavBar role="aplicador" title="Portal Clínico" />
+      <SideNavBar 
+        role="aplicador" 
+        title="Portal Clínico" 
+        onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)} 
+      />
 
       {showSuccessToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#123440] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-bounce">
@@ -217,8 +251,10 @@ export default function AsignarPrueba() {
         </div>
       )}
 
-      <div className="flex-1 ml-64 min-h-screen flex flex-col">
-        <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 flex justify-between items-center px-8 py-4 shadow-sm">
+      <div className={`flex-1 transition-all duration-300 min-h-screen flex flex-col ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+        <header className={`fixed top-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 w-full ${
+        isSidebarCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-16rem)]'
+        }`}>
           <div className="relative w-64 hidden lg:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
@@ -229,13 +265,38 @@ export default function AsignarPrueba() {
               className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-transparent rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all placeholder:text-slate-400 font-medium text-[#202221]"
             />
           </div>
-          <div className="flex items-center gap-3 ml-auto text-[#123440]">
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative cursor-pointer">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+
+          <div className="flex items-center gap-4 ml-auto text-[#123440]">
+            <NotificadorTiempoReal />
+
+            {/* Botón de configuración de perfil con Avatar */}
+            <button 
+              onClick={() => setIsPerfilModalOpen(true)}
+              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-[#123440]"
+              title="Configuración de perfil"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-slate-600">
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                )}
+              </div>
+              <Settings size={16} />
             </button>
           </div>
         </header>
+
+        {/* Modal de Configuración de Perfil */}
+        <ModalConfiguracionPerfil 
+          isOpen={isPerfilModalOpen}
+          onClose={() => setIsPerfilModalOpen(false)}
+          onPerfilActualizado={() => {
+            cargarDatosUsuario();
+          }}
+        />
 
         <main className="mt-16 p-8 flex-1 flex flex-col">
           <section className="mb-8">

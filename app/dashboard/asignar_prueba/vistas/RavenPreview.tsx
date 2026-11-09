@@ -11,8 +11,7 @@ export default function RavenPreview({ questions }: { questions: any[] }) {
           <Grid size={20} />
         </div>
         <div>
-          <h4 className="text-xs font-bold text-indigo-900">Test de Matrices Progresivas de Raven</h4>
-          <p className="text-[11px] text-indigo-700">Evaluación visual basada en la deducción de relaciones y patrones lógicos.</p>
+          <h4 className="text-xs font-bold text-indigo-900">Test Raven</h4>
         </div>
       </div>
 

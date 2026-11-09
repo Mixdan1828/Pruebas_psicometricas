@@ -19,7 +19,9 @@ import {
   Trash2,
   AlertTriangle
 } from 'lucide-react';
-import SideNavBar from '../../../componentes/SideNavBar';
+import SideNavBar from '../../componentes/SideNavBar';
+import NotificadorTiempoReal from '../../componentes/NotificadorTiempoReal';
+import ModalConfiguracionPerfil from '@/app/componentes/ModalConfiguracionPerfil';
 import { createClient } from '@/lib/supabase/client';
 import { obtenerHistorialPruebas, eliminarPruebaYResultado, TestItem } from './historialService';
 
@@ -49,10 +51,36 @@ export default function HistorialPruebas() {
   const [itemToDelete, setItemToDelete] = useState<TestItem | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
 
+  // Estados para usuario, avatar, modal de perfil y barra lateral colapsable
+  const [userName, setUserName] = useState('Usuario');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   // Paginación
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Cargar datos usando el servicio modular
+  const cargarDatosUsuario = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setUserName(profileData.full_name || 'Usuario');
+        setAvatarUrl(profileData.avatar_url || null);
+      }
+    } catch (error) {
+      console.error('Error al cargar perfil del usuario:', error);
+    }
+  };
+
+  // Cargar datos usando el servicio modular y perfil de usuario
   useEffect(() => {
     async function fetchData() {
       try {
@@ -64,6 +92,9 @@ export default function HistorialPruebas() {
           setLoading(false);
           return;
         }
+
+        // Cargar nombre y avatar del perfil
+        await cargarDatosUsuario();
 
         const resultsData = await obtenerHistorialPruebas(user.id);
         const sedesSet = new Set<string>();
@@ -232,11 +263,17 @@ export default function HistorialPruebas() {
 
   return (
     <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans">
-      <SideNavBar role="aplicador" title="Portal Clínico" />
+      <SideNavBar 
+        role="aplicador" 
+        title="Portal Clínico" 
+        onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)} 
+      />
 
-      <div className="flex-1 ml-64 min-h-screen flex flex-col">
+      <div className={`flex-1 transition-all duration-300 min-h-screen flex flex-col ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
         {/* Navbar */}
-        <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-8 h-16">
+        <header className={`fixed top-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 w-full ${
+        isSidebarCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-16rem)]'
+        }`}>
           <div className="flex-1">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -249,11 +286,37 @@ export default function HistorialPruebas() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 text-[#123440]">
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative cursor-pointer"><Bell size={18} /><span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span></button>
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors cursor-pointer"><Settings size={18} /></button>
+          <div className="flex items-center gap-4 ml-auto text-[#123440]">
+            <NotificadorTiempoReal />
+          
+            {/* Botón de configuración de perfil con Avatar */}
+            <button 
+              onClick={() => setIsPerfilModalOpen(true)}
+              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-[#123440]"
+              title="Configuración de perfil"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-slate-600">
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                )}
+              </div>
+              <Settings size={16} />
+            </button>
           </div>
         </header>
+
+        {/* Modal de Configuración de Perfil */}
+        <ModalConfiguracionPerfil 
+          isOpen={isPerfilModalOpen}
+          onClose={() => setIsPerfilModalOpen(false)}
+          onPerfilActualizado={() => {
+            cargarDatosUsuario();
+          }}
+        />
 
         {/* Main */}
         <main className="mt-16 p-8 flex-1">
