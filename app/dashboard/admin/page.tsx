@@ -15,7 +15,7 @@ import {
   ShieldAlert, 
   CheckCircle2 
 } from 'lucide-react';
-import SideNavBar from '../../../componentes/SideNavBar';
+import SideNavBar from '../../componentes/SideNavBar';
 
 export default function UserManagementDashboard() {
   // Filtro de pestañas activo

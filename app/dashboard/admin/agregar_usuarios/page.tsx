@@ -16,7 +16,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from 'lucide-react';
-import SideNavBar from '../../../../componentes/SideNavBar';
+import SideNavBar from '../../../componentes/SideNavBar';
 
 // 1. Tipado estricto de TypeScript para el modelo de datos
 interface User {

@@ -1,5 +1,5 @@
 import { ArrowRight, MapPin, Users, GraduationCap } from 'lucide-react';
-import Barra_Nav from '../componentes/Barra_Nav';
+import Barra_Nav from './componentes/Barra_Nav';
 import { AiOutlineMedicineBox } from 'react-icons/ai';
 import { LuHandHeart } from 'react-icons/lu';
 import Image from 'next/image';

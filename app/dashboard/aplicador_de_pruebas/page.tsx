@@ -12,11 +12,12 @@ import {
   ChevronRight,
   ChevronLeft,
   Search,
-  Bell,
   Settings,
 } from 'lucide-react';
 
-import SideNavBar from '../../../componentes/SideNavBar';
+import SideNavBar from '../../componentes/SideNavBar';
+import NotificadorTiempoReal from '../../componentes/NotificadorTiempoReal';
+import ModalConfiguracionPerfil from '@/app/componentes/ModalConfiguracionPerfil';
 import { createClient } from '@/lib/supabase/client';
 
 const DAILY_TIPS = [
@@ -68,6 +69,11 @@ export default function AplicadorDePruebas() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userName, setUserName] = useState('Cargando...');
   
+  // Estados para el Modal de Configuración de Perfil y Sidebar Colapsable
+  const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const [recentActivities, setRecentActivities] = useState<CandidateGroup[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
 
@@ -120,11 +126,12 @@ export default function AplicadorDePruebas() {
 
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
 
         setUserName(profileData?.full_name || 'Usuario');
+        setAvatarUrl(profileData?.avatar_url || '');
 
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
@@ -150,7 +157,7 @@ export default function AplicadorDePruebas() {
           });
         }
 
-        // 2. Conteo de pruebas completadas hoy (usando user_id directo primero)
+        // 2. Conteo de pruebas completadas hoy
         let todayCount = 0;
         const { count: directCount } = await supabase
           .from('candidate_results')
@@ -178,8 +185,7 @@ export default function AplicadorDePruebas() {
           completedToday: todayCount,
         });
 
-        // 3. Obtención de candidate_results con estrategia dual
-        // Intento 1: Filtrar por candidate_results.user_id directo
+        // 3. Obtención de candidate_results
         let { data: resultsData, error: resultsError } = await supabase
           .from('candidate_results')
           .select(`
@@ -202,7 +208,6 @@ export default function AplicadorDePruebas() {
           .eq('user_id', user.id)
           .limit(30);
 
-        // Intento 2: Si por user_id no trajo nada, intentar mediante candidates -> links -> created_by
         if (!resultsError && (!resultsData || resultsData.length === 0)) {
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('candidate_results')
@@ -232,15 +237,10 @@ export default function AplicadorDePruebas() {
 
           if (!fallbackError && fallbackData) {
             resultsData = fallbackData;
-          } else if (fallbackError) {
-            console.error('Error al consultar candidate_results (fallback):', fallbackError.message);
           }
-        } else if (resultsError) {
-          console.error('Error al consultar candidate_results:', resultsError.message);
         }
 
         if (resultsData && resultsData.length > 0) {
-          // Ordenar cliente-side por timestamp de completado o inicio si están disponibles
           resultsData.sort((a: any, b: any) => {
             const timeA = new Date(a.completed_at || a.started_at || 0).getTime();
             const timeB = new Date(b.completed_at || b.started_at || 0).getTime();
@@ -316,7 +316,6 @@ export default function AplicadorDePruebas() {
     fetchData();
   }, [supabase]);
 
-  // Filtrado por barra de búsqueda
   const filteredActivities = recentActivities.filter((group) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase().trim();
@@ -345,10 +344,16 @@ export default function AplicadorDePruebas() {
 
   return (
     <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans">
-      <SideNavBar role="aplicador" title="Panel de Aplicador" />
+      <SideNavBar 
+        role="aplicador" 
+        title="Panel de Aplicador" 
+        onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)} 
+      />
 
-      <div className="flex-1 ml-64 min-h-screen flex flex-col">
-        <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-8 h-16">
+      <div className={`flex-1 transition-all duration-300 min-h-screen flex flex-col ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+        <header className={`fixed top-0 right-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 w-full ${
+        isSidebarCollapsed ? 'md:w-[calc(100%-5rem)]' : 'md:w-[calc(100%-16rem)]'
+        }`}>
           <div className="flex-1">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -363,15 +368,36 @@ export default function AplicadorDePruebas() {
           </div>
 
           <div className="flex items-center gap-4 text-[#123440]">
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative cursor-pointer">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-            </button>
-            <button className="p-2 hover:bg-slate-50 rounded-full transition-colors cursor-pointer">
-              <Settings size={18} />
+            <NotificadorTiempoReal />
+            
+            {/* Botón de configuración con miniatura de Avatar */}
+            <button
+              onClick={() => setIsPerfilModalOpen(true)}
+              className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-[#123440]"
+              title="Configuración de perfil"
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs font-bold text-slate-600">
+                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                )}
+              </div>
+              <Settings size={16} />
             </button>
           </div>
         </header>
+
+        {/* Modal de Configuración de Perfil */}
+        <ModalConfiguracionPerfil
+          isOpen={isPerfilModalOpen}
+          onClose={() => setIsPerfilModalOpen(false)}
+          onPerfilActualizado={() => {
+            // Recargar o actualizar el nombre en pantalla si es necesario
+          }}
+        />
 
         <main className="mt-16 p-8 flex-1">
           <div className="space-y-8">
