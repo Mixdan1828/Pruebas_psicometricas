@@ -72,10 +72,10 @@ function LoginContent() {
 
   // Único método de autenticación: Google OAuth.
   // El intercambio del `code` por sesión ocurre en /auth/callback (lado servidor).
-  const getURL = () => {
-    let url = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    url = url.replace(/\/$/, '');
-    return `${url}/auth/callback`;
+ const getURL = () => {
+    // Forzamos el uso estricto del dominio actual del cliente para evitar errores de concatenación con Vercel o Supabase
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/auth/callback`;
   };
 
   const handleGoogleLogin = async () => {

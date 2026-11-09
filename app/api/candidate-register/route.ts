@@ -12,6 +12,8 @@ interface RegisterBody {
   sede?: string;
   estado_civil?: string;
   escolaridad?: string;
+  fecha_nacimiento?: string;
+  Fecha_Nacimiento?: string; // <-- Agregado para soportar mayúsculas
 }
 
 /**
@@ -42,6 +44,9 @@ export async function POST(request: Request) {
     const sede = (body.sede ?? '').trim();
     const estadoCivil = (body.estado_civil ?? '').trim();
     const escolaridad = (body.escolaridad ?? '').trim();
+    
+    // Capturamos tanto la versión en minúsculas como en mayúsculas
+    const fechaNacimiento = (body.fecha_nacimiento ?? body.Fecha_Nacimiento ?? '').trim();
 
     if (
       !nombre ||
@@ -117,6 +122,7 @@ export async function POST(request: Request) {
         headquarter: sede,
         marital_status: estadoCivil,
         education_level: escolaridad,
+        Fecha_Nacimiento: fechaNacimiento || null,
       } as any)
       .select('id')
       .single();

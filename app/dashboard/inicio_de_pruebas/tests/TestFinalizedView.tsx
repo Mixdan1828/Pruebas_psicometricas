@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 interface FinalizedProps {
   patientName?: string;
   testNames: string | string[];
-  timeElapsed: string;
+  dateCompleted?: string;
   onGoHome: () => void;
 }
 
@@ -32,27 +32,43 @@ function dedupeTestNames(input: string | string[]): string {
     }
   }
 
-  return unique.join(', ');
+  return unique.join(', ') || "Test Terman Merrill";
 }
 
-export default function TestFinalizedView({ patientName: initialPatientName, testNames, timeElapsed, onGoHome }: FinalizedProps) {
+export default function TestFinalizedView({ patientName: initialPatientName, testNames, dateCompleted: initialDateCompleted, onGoHome }: FinalizedProps) {
   const [patientName, setPatientName] = useState(initialPatientName || "Candidato");
+  const [completionDate, setCompletionDate] = useState(initialDateCompleted || "");
 
-  // Nombre único de la prueba: aunque el padre envíe "Terman, Terman, Terman"
-  // (un registro por usuario asignado), aquí se muestra una sola vez.
+  // Nombre único de la prueba deduplicado correctamente
   const displayTestNames = dedupeTestNames(testNames);
 
   useEffect(() => {
-    // El prop tiene prioridad; solo se usa localStorage como respaldo.
-    if (initialPatientName) {
+    // 1. Resolver Nombre del Paciente (Prioridad prop -> localStorage -> Valor por defecto)
+    if (initialPatientName && initialPatientName.trim() !== "") {
       setPatientName(initialPatientName);
-      return;
+    } else {
+      const savedName = localStorage.getItem('candidato_nombre');
+      if (savedName) setPatientName(savedName);
     }
-    const savedName = localStorage.getItem('candidato_nombre');
-    if (savedName) {
-      setPatientName(savedName);
+
+    // 2. Resolver Fecha de Realización (Prioridad prop -> localStorage -> Fecha actual formateada)
+    if (initialDateCompleted && initialDateCompleted.trim() !== "") {
+      setCompletionDate(initialDateCompleted);
+    } else {
+      const savedDate = localStorage.getItem('fecha_evaluacion');
+      if (savedDate) {
+        setCompletionDate(savedDate);
+      } else {
+        // Generar fecha actual en formato legible (Ej: 24 de oct. de 2026)
+        const hoy = new Date().toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+        setCompletionDate(hoy);
+      }
     }
-  }, [initialPatientName]);
+  }, [initialDateCompleted, initialPatientName]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -83,15 +99,15 @@ export default function TestFinalizedView({ patientName: initialPatientName, tes
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
             {/* Cuadro Paciente */}
             <div className="p-4 rounded-xl space-y-1" style={{ backgroundColor: '#f0eded' }}>
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#434749' }}>Paciente</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Candidato</span>
               <p className="text-base font-headline font-bold" style={{ color: '#001E28' }}>{patientName}</p>
             </div>
-            {/* Cuadro Tiempo */}
+            {/* Cuadro Fecha */}
             <div className="p-4 rounded-xl space-y-1" style={{ backgroundColor: '#f0eded' }}>
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#434749' }}>Tiempo total</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Fecha de realización</span>
               <p className="text-base font-headline font-bold flex items-center gap-2" style={{ color: '#001E28' }}>
-                <span className="material-symbols-outlined text-sm">schedule</span>
-                {timeElapsed}
+                <span className="material-symbols-outlined text-sm">calendar_today</span>
+                {completionDate}
               </p>
             </div>
             {/* Cuadro Evaluaciones */}
@@ -120,7 +136,6 @@ export default function TestFinalizedView({ patientName: initialPatientName, tes
               Regresar al Inicio
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
-            
           </div>
         </div>
 

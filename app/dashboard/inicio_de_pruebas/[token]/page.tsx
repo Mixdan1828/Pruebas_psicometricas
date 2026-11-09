@@ -24,6 +24,7 @@ interface FormData {
   sede: string;
   estado_civil: string;
   escolaridad: string;
+  Fecha_Nacimiento: string;
 }
 
 interface LinkData {
@@ -82,6 +83,11 @@ const DemographicsForm = memo(function DemographicsForm({
             </div>
           </div>
 
+          <div>
+            <label htmlFor="Fecha_Nacimiento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Fecha de nacimiento</label>
+            <input id="Fecha_Nacimiento" required type="date" name="Fecha_Nacimiento" value={formData.Fecha_Nacimiento} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]" />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="edad" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Edad</label>
@@ -98,27 +104,28 @@ const DemographicsForm = memo(function DemographicsForm({
             </div>
           </div>
 
+          {/* Sede de Evaluación corregida con los valores exactos */}
           <div>
             <label htmlFor="sede" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sede de Evaluación</label>
             <select id="sede" required name="sede" value={formData.sede} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]">
               <option value="">Selecciona tu sede correspondiente...</option>
-              <option value="Sede Central Orizaba">Puerta Grande</option>
-              <option value="Sede Córdoba">Tierra blanca</option>
-              <option value="Sede Veracruz Puerto">Torre Diez Sede</option>
-              <option value="Sede Veracruz Puerto">Torre Diez Oficinas</option>
-              <option value="Sede Veracruz Puerto">EMiliano Zarranza</option>
-              <option value="Sede Veracruz Puerto">Coatepec 1</option>
-              <option value="Sede Veracruz Puerto">Coatepec 2</option>
-              <option value="Sede Veracruz Puerto">Coatzacalcos</option>
-              <option value="Sede Veracruz Puerto">Cosamaloapan</option>
-              <option value="Sede Veracruz Puerto">Acayucan</option>
-              <option value="Sede Veracruz Puerto">CD de Mexico</option>
-              <option value="Sede Veracruz Puerto">Tuxtepec</option>
-              <option value="Sede Veracruz Puerto">Consultorios</option>
-              <option value="Sede Veracruz Puerto">Cancha</option>
-              <option value="Sede Veracruz Puerto">Merida</option>
-              <option value="Sede Veracruz Puerto">Boca del rio</option>
-              
+              <option value="Puerta Grande">Puerta Grande</option>
+              <option value="Tierra blanca">Tierra blanca</option>
+              <option value="Tlapacoyan">Tlapacoyan</option>
+              <option value="Torre Diez Sede">Torre Diez Sede</option>
+              <option value="Torre Diez Oficinas">Torre Diez Oficinas</option>
+              <option value="EMiliano Zarranza">EMiliano Zarranza</option>
+              <option value="Coatepec 1">Coatepec 1</option>
+              <option value="Coatepec 2">Coatepec 2</option>
+              <option value="Coatzacoalcos">Coatzacoalcos</option>
+              <option value="Cosamaloapan">Cosamaloapan</option>
+              <option value="Acayucan">Acayucan</option>
+              <option value="CD de Mexico">CD de Mexico</option>
+              <option value="Tuxtepec">Tuxtepec</option>
+              <option value="Consultorios">Consultorios</option>
+              <option value="Cancha">Cancha</option>
+              <option value="Merida">Merida</option>
+              <option value="Boca del rio">Boca del rio</option>
             </select>
           </div>
 
@@ -180,6 +187,7 @@ export default function BienvenidaEvaluacion() {
     sede: '',
     estado_civil: '',
     escolaridad: '',
+    Fecha_Nacimiento: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -195,8 +203,6 @@ export default function BienvenidaEvaluacion() {
       }
 
       try {
-        // Validación en el SERVIDOR (service role, omite RLS):
-        // el candidato no tiene sesión y la anon key no puede leer `links`.
         const res = await fetch(`/api/candidate-link?token=${encodeURIComponent(token)}`);
         const payload = await res.json().catch(() => ({}));
 
@@ -223,8 +229,6 @@ export default function BienvenidaEvaluacion() {
     try {
       if (!linkInfo) throw new Error('Enlace no disponible.');
 
-      // Registro en el SERVIDOR (service role, omite RLS):
-      // verifica cupo, crea candidate + candidate_results y actualiza current_users.
       const res = await fetch('/api/candidate-register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,6 +243,7 @@ export default function BienvenidaEvaluacion() {
           sede: formData.sede,
           estado_civil: formData.estado_civil,
           escolaridad: formData.escolaridad,
+          Fecha_Nacimiento: formData.Fecha_Nacimiento,
         }),
       });
 
@@ -250,6 +255,8 @@ export default function BienvenidaEvaluacion() {
 
       const nombreCompleto = `${formData.nombre} ${formData.apellido_paterno} ${formData.apellido_materno || ''}`.trim();
       localStorage.setItem('candidato_nombre', nombreCompleto);
+      localStorage.setItem('candidato_apellido_paterno', formData.apellido_paterno);
+      localStorage.setItem('candidato_apellido_materno', formData.apellido_materno);
       localStorage.setItem('token_actual', token);
 
       router.push(`/dashboard/inicio_de_pruebas/${token}/resolver`);

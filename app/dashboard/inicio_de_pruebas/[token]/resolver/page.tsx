@@ -2,10 +2,11 @@
 
 import { Component, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
-import TermanView from '@/componentes/tests/termanView';
-import CleaverView from '@/componentes/tests/CleaverView';
-import Nom035IntegralView from '@/componentes/tests/Nom035IntegralView';
-import TestFinalizedView from '@/componentes/tests/TestFinalizedView';
+import TermanView from '../../tests/termanView';
+import CleaverView from '../../tests/CleaverView';
+import Nom035IntegralView from '../../tests/Nom035IntegralView';
+import TestFinalizedView from '../../tests/TestFinalizedView';
+import RavenView from '../../tests/RavenView';
 
 /* ------------------------------------------------------------------ */
 /* ErrorBoundary: evita pantalla en blanco ante errores de renderizado */
@@ -70,6 +71,14 @@ export default function ResolverOrchestrator() {
   const [phase, setPhase] = useState<FetchPhase>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
+  const [patientName, setPatientName] = useState('Candidato');
+
+  // Recupera el nombre del candidato capturado en el registro (flujo temporal entre pantallas)
+  useEffect(() => {
+    if (typeof localStorage === 'undefined') return;
+    const saved = localStorage.getItem('candidato_nombre');
+    if (saved) setPatientName(saved);
+  }, []);
 
   const loadTests = useCallback(async () => {
     console.log('[resolver] Token recibido desde URL:', token);
@@ -84,8 +93,6 @@ export default function ResolverOrchestrator() {
     }
 
     try {
-      // La asignación se lee en el SERVIDOR (service role, sin RLS) porque el
-      // candidato no tiene sesión y la anon key no puede leer candidate_results.
       const res = await fetch(`/api/candidate-evaluation?token=${encodeURIComponent(token)}`);
       const payload = await res.json().catch(() => ({}));
 
@@ -107,7 +114,6 @@ export default function ResolverOrchestrator() {
         return;
       }
 
-      // Las preguntas ya vienen ordenadas por order_index desde el servidor.
       const validTests = candidateData.filter((item: any) => item.tests !== null);
 
       if (validTests.length === 0) {
@@ -119,13 +125,11 @@ export default function ResolverOrchestrator() {
 
       setCandidateTests(validTests);
 
-      // Posicionar directamente en la primera prueba pendiente (no completada)
       const firstPendingIndex = validTests.findIndex((item: any) => item.status !== 'completo');
 
       if (firstPendingIndex !== -1) {
         setCurrentTestIndex(firstPendingIndex);
       } else {
-        // Si todas están completas en BD, mostrar vista final
         setIsFinished(true);
       }
 
@@ -143,15 +147,27 @@ export default function ResolverOrchestrator() {
 
   const currentResult = candidateTests[currentTestIndex];
   const currentTest = currentResult?.tests;
-  const testType = (currentTest?.type || 'terman').toLowerCase();
+
+  // Detección robusta del tipo de test considerando tanto el campo type como el nombre
+  const getTestIdentifier = () => {
+    const rawType = (currentTest?.type || '').toLowerCase();
+    const rawName = (currentTest?.name || '').toLowerCase();
+    
+    if (rawType.includes('raven') || rawName.includes('raven')) return 'raven';
+    if (rawType.includes('cleaver') || rawName.includes('cleaver')) return 'cleaver';
+    if (rawType.includes('nom-035') || rawType.includes('nom035') || rawName.includes('nom-035') || rawName.includes('integral')) return 'nom-035-integral';
+    if (rawType.includes('terman') || rawName.includes('terman') || rawName.includes('merrill')) return 'terman';
+    
+    return rawType || 'terman';
+  };
+
+  const testType = getTestIdentifier();
 
   const handleTestComplete = async (answers: Record<string, any>) => {
     if (!currentResult) return;
 
     const isLastTest = currentTestIndex === candidateTests.length - 1;
 
-    // 1. Guardar en el SERVIDOR (service role, omite RLS):
-    // el candidato no tiene sesión y la anon key no puede actualizar candidate_results.
     const res = await fetch('/api/candidate-save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -172,14 +188,12 @@ export default function ResolverOrchestrator() {
       throw new Error(payload?.error || 'Error al guardar respuestas.');
     }
 
-    // 2. Actualizar el estado local para reflejar que esta prueba ya se completó
     setCandidateTests((prev) =>
       prev.map((item, idx) =>
         idx === currentTestIndex ? { ...item, status: 'completo' } : item
       )
     );
 
-    // 3. Avanzar a la siguiente prueba o finalizar la sesión completa
     if (!isLastTest) {
       setCurrentTestIndex((prev) => prev + 1);
       if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -188,33 +202,31 @@ export default function ResolverOrchestrator() {
     }
   };
 
-  // Selecciona y renderiza la vista según el tipo detectado.
-  // Mantiene Cleaver, Terman y las Guías NOM-035 existentes intactos.
   const renderActiveTest = () => {
-    console.log('[resolver] Seleccionando componente... tipo:', testType, '| test:', currentTest?.name);
+    console.log('[resolver] Seleccionando componente... tipo detectado:', testType, '| test:', currentTest?.name);
+    const viewKey = `${currentResult?.id ?? 'test'}-${currentTestIndex}`;
 
     switch (testType) {
       case 'cleaver':
-        return <CleaverView key={currentResult.id} testData={currentTest} onComplete={handleTestComplete} />;
+        return <CleaverView key={viewKey} testData={currentTest} onComplete={handleTestComplete} />;
       case 'nom-035-integral':
-        return <Nom035IntegralView key={currentResult.id} testData={currentTest} onComplete={handleTestComplete} />;
+        return <Nom035IntegralView key={viewKey} testData={currentTest} onComplete={handleTestComplete} />;
+      case 'raven':
+        return <RavenView key={viewKey} testData={currentTest} onComplete={handleTestComplete} />;
       case 'terman':
       default:
-        // fallback seguro para Terman y cualquier otro tipo no registrado explícitamente
-        return <TermanView key={currentResult.id} testData={currentTest} onComplete={handleTestComplete} />;
+        return <TermanView key={viewKey} testData={currentTest} onComplete={handleTestComplete} />;
     }
   };
 
   return (
     <ResolverErrorBoundary>
-      {/* CARGA */}
       {phase === 'loading' && (
         <div className="min-h-screen bg-[#F9F9F7] flex items-center justify-center font-body text-slate-600">
           <p className="animate-pulse font-semibold">Cargando evaluación...</p>
         </div>
       )}
 
-      {/* NO ENCONTRADO */}
       {phase === 'not_found' && (
         <div className="min-h-screen bg-[#F9F9F7] flex flex-col items-center justify-center font-body text-slate-600 p-6 text-center">
           <h2 className="text-xl font-bold text-amber-600 mb-2">Evaluación no disponible</h2>
@@ -231,7 +243,6 @@ export default function ResolverOrchestrator() {
         </div>
       )}
 
-      {/* ERROR */}
       {phase === 'error' && (
         <div className="min-h-screen bg-[#F9F9F7] flex flex-col items-center justify-center font-body text-slate-700 p-6 text-center">
           <h2 className="text-xl font-bold text-red-600 mb-2">Error al cargar la evaluación</h2>
@@ -246,7 +257,6 @@ export default function ResolverOrchestrator() {
         </div>
       )}
 
-      {/* LISTO: vista final o test activo */}
       {phase === 'ready' && (
         isFinished ? (
           (() => {
@@ -257,11 +267,9 @@ export default function ResolverOrchestrator() {
 
             return (
               <TestFinalizedView
-                patientName="Candidato"
+                patientName={patientName}
                 testNames={completedTestsNames}
-                timeElapsed="Completado con éxito"
                 onGoHome={() => window.location.href = '/'}
-                
               />
             );
           })()

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import TestFinalizedView from './TestFinalizedView';
 import CleaverView from './CleaverView';
 import TermanView from './termanView'; // Asegúrate de importar tus vistas
 import Nom035IntegralView from './Nom035IntegralView';
+import RavenView from './RavenView'; // Importa la vista de Raven
 
 interface TestItem {
   id: string;
@@ -31,6 +32,24 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
   const startTimeRef = useRef<number>(Date.now());
   // Guard anti doble-clic / doble onComplete (StrictMode, timers, reintentos)
   const isCompletingRef = useRef(false);
+  // Temporizador de la redirección automática tras la ventana de resultados (10 segundos)
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Nombre del paciente: prioridad prop recibido del registro ->
+  // datos temporales guardados en localStorage -> valor por defecto.
+  const resolvedPatientName = useMemo(() => {
+    if (patientName && patientName.trim() !== '') return patientName;
+    if (typeof localStorage !== 'undefined') {
+      const storedFull = localStorage.getItem('candidato_nombre');
+      if (storedFull) return storedFull;
+      const nombre = localStorage.getItem('candidato_nombre') ?? '';
+      const paterno = localStorage.getItem('candidato_apellido_paterno') ?? '';
+      const materno = localStorage.getItem('candidato_apellido_materno') ?? '';
+      const combinado = [nombre, paterno, materno].filter(Boolean).join(' ').trim();
+      if (combinado) return combinado;
+    }
+    return 'Candidato';
+  }, [patientName]);
 
   // Deduplicar la lista: si el padre envía el mismo test una vez por usuario
   // asignado (ej. Terman x3), aquí queda una sola entrada por test.
@@ -86,11 +105,27 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
       const mins = Math.floor(totalSeconds / 60);
       const secs = totalSeconds % 60;
       setTimeElapsedStr(`${mins} minutos y ${secs} segundos`);
+      // Variable temporal del tiempo total (minutos exactos) para lectura desde el mensaje/etiqueta
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('tiempo_evaluacion', timeElapsedStr || `${mins} minutos y ${secs} segundos`);
+      }
       setIsFinished(true);
       // No se libera el guard: la sesión ya terminó.
       return prevIndex;
     });
   }, [isFinished, uniqueTestsList.length]);
+
+  // Una vez finalizado el test, se muestra la ventana de resultados exactamente 10 segundos
+  // y se redirige automáticamente al índice para evitar reintentos del test.
+  useEffect(() => {
+    if (!isFinished) return;
+    redirectTimerRef.current = setTimeout(() => {
+      window.location.href = '/';
+    }, 10000);
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, [isFinished]);
 
   // Validar si la lista de tests está vacía (después de los hooks para no romper reglas de hooks)
   if (!uniqueTestsList || uniqueTestsList.length === 0) {
@@ -104,9 +139,9 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
   if (isFinished) {
     return (
       <TestFinalizedView 
-        patientName={patientName}
+        patientName={resolvedPatientName}
         testNames={completedTestsNames}
-        timeElapsed={timeElapsedStr}
+        dateCompleted={timeElapsedStr}
         onGoHome={() => window.location.href = '/'}
         
       />
@@ -137,6 +172,17 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
     if (testIdentifier.includes('nom-035') || testIdentifier.includes('nom035') || testIdentifier.includes('integral')) {
       return (
         <Nom035IntegralView 
+          key={viewKey}
+          testData={currentTest} 
+          onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 
+        />
+      );
+    }
+
+    // Test de Raven (Matrices Progresivas)
+    if (testIdentifier.includes('raven')) {
+      return (
+        <RavenView 
           key={viewKey}
           testData={currentTest} 
           onComplete={(answers) => handleTestComplete(currentTest.id, answers)} 

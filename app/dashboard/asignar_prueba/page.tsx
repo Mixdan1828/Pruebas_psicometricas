@@ -5,11 +5,11 @@ import { nanoid } from 'nanoid';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Brain, UserSearch, TrendingUp, Activity, ClipboardList, Users, Link2, 
-  CheckCircle2, RefreshCw, Copy, Search, Bell, Settings, Eye, X, Trash2,
-  Clock, ShieldAlert, UserCheck, Save, ListChecks
+  CheckCircle2, RefreshCw, Copy, Search, Bell, ShieldAlert, Eye, Trash2, Grid
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import SideNavBar from '../../../componentes/SideNavBar';
+import TestPreviewModal from './TestPreviewModal';
 
 interface IconMeta {
   icon: LucideIcon;
@@ -23,7 +23,8 @@ const ICON_MAP: { [key: string]: IconMeta } = {
   'Evaluación de Estrés Post-Traumático': { icon: Activity, color: 'bg-rose-50 text-rose-700' },
   'Examen Psicológico General': { icon: ClipboardList, color: 'bg-amber-50 text-amber-700' },
   'Test de Habilidades Sociales': { icon: Users, color: 'bg-purple-50 text-purple-700' },
-  'NOM-035-STPS-2018 (Evaluación Integral)': { icon: ShieldAlert, color: 'bg-rose-50 text-rose-700' }
+  'NOM-035-STPS-2018 (Evaluación Integral)': { icon: ShieldAlert, color: 'bg-rose-50 text-rose-700' },
+  'Test de Raven': { icon: Grid, color: 'bg-indigo-50 text-indigo-700' }
 };
 
 export default function AsignarPrueba() {
@@ -35,6 +36,9 @@ export default function AsignarPrueba() {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
+  const [generatedLinkId, setGeneratedLinkId] = useState<string | null>(null);
+  const [isUpdatingLimit, setIsUpdatingLimit] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -43,14 +47,6 @@ export default function AsignarPrueba() {
   const [previewTest, setPreviewTest] = useState<any>(null);
   const [previewQuestions, setPreviewQuestions] = useState<any[]>([]);
   const [loadingPreview, setLoadingPreview] = useState(false);
-
-  // Estado para la asignación de candidatos/grupos dentro del modal
-  const [candidates, setCandidates] = useState<any[]>([]);
-  const [searchCandidate, setSearchCandidate] = useState('');
-  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
-  const [loadingCandidates, setLoadingCandidates] = useState(false);
-  const [assigning, setAssigning] = useState(false);
-  const [assignMessage, setAssignMessage] = useState<any>(null);
 
   useEffect(() => {
     async function cargarCatalogo() {
@@ -72,7 +68,7 @@ export default function AsignarPrueba() {
       }
     }
     cargarCatalogo();
-  }, []);
+  }, [supabase]);
 
   const toggleTestSelection = (prueba: any) => {
     const exists = selectedTests.some(t => t.id === prueba.id);
@@ -88,65 +84,87 @@ export default function AsignarPrueba() {
   const handleGenerateAndAssign = async () => {
     if (selectedTests.length === 0) return;
 
-  setIsGenerating(true);
-  setGeneratedLink('');
-  setErrorMessage('');
+    setIsGenerating(true);
+    setGeneratedLink('');
+    setGeneratedLinkId(null);
+    setErrorMessage('');
 
-  try {
-    // 1. Obtener usuario autenticado
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error("No se detectó una sesión activa. Inicia sesión nuevamente.");
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("No se detectó una sesión activa. Inicia sesión nuevamente.");
+      }
+
+      const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, '');
+      const token = nanoid(12);
+      const link = `${baseUrl}/dashboard/inicio_de_pruebas/${token}`;
+
+      const { data: linkData, error: linkError } = await supabase
+        .from('links')
+        .insert({
+          token,
+          created_by: user.id,
+          max_users: Math.max(1, Number(limiteUsuarios)),
+          current_users: 0,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+
+      if (linkError) {
+        throw new Error(`Error en 'links': ${linkError.message}`);
+      }
+
+      const rowsToInsertRelations = selectedTests.map((test, index) => ({
+        link_id: linkData.id,
+        test_id: test.id,
+        step_order: index + 1
+      }));
+
+      const { error: relationError } = await supabase
+        .from('link_tests')
+        .insert(rowsToInsertRelations);
+
+      if (relationError) {
+        throw new Error(`Error en 'link_tests': ${relationError.message}`);
+      }
+
+      await navigator.clipboard.writeText(link);
+      setGeneratedLink(link);
+      setGeneratedLinkId(linkData.id);
+
+    } catch (error: any) {
+      console.error("Error al asignar la prueba:", error);
+      setErrorMessage(error.message);
+    } finally {
+      setIsGenerating(false);
     }
+  };
 
-    // 2. Generar token y URL en texto plano (sin Markdown, corchetes ni paréntesis).
-    // La base usa NEXT_PUBLIC_APP_URL en producción; en desarrollo cae a window.location.origin.
-    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin).replace(/\/$/, '');
-    const token = nanoid(12);
-    const link = `${baseUrl}/dashboard/inicio_de_pruebas/${token}`;
+  const handleUpdateLimit = async () => {
+    if (!generatedLinkId) return;
+    setIsUpdatingLimit(true);
+    setErrorMessage('');
 
-    // 3. Insertar registro en 'links'
-    const { data: linkData, error: linkError } = await supabase
-      .from('links')
-      .insert({
-        token,
-        created_by: user.id,
-        max_users: Math.max(1, Number(limiteUsuarios)),
-        current_users: 0,
-        created_at: new Date().toISOString()
-      })
-      .select('id')
-      .single();
+    try {
+      const { error } = await supabase
+        .from('links')
+        .update({ max_users: Math.max(1, Number(limiteUsuarios)) })
+        .eq('id', generatedLinkId);
 
-    if (linkError) {
-      throw new Error(`Error en 'links': ${linkError.message}`);
+      if (error) throw error;
+
+      setShowSuccessToast(true);
+      setTimeout(() => {
+        setShowSuccessToast(false);
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Error al actualizar el límite:', error);
+      setErrorMessage(error.message || 'Error al actualizar el límite.');
+    } finally {
+      setIsUpdatingLimit(false);
     }
-
-    // 4. Insertar relaciones en 'link_tests'
-    const rowsToInsertRelations = selectedTests.map((test, index) => ({
-      link_id: linkData.id,
-      test_id: test.id,
-      step_order: index + 1
-    }));
-
-    const { error: relationError } = await supabase
-      .from('link_tests')
-      .insert(rowsToInsertRelations);
-
-    if (relationError) {
-      throw new Error(`Error en 'link_tests': ${relationError.message}`);
-    }
-
-    // 5. Copiar enlace y actualizar la vista
-    await navigator.clipboard.writeText(link);
-    setGeneratedLink(link);
-
-  } catch (error: any) {
-    console.error("Error al asignar la prueba:", error);
-    setErrorMessage(error.message);
-  } finally {
-    setIsGenerating(false);
-  }
   };
 
   const abrirPrevisualizacion = async (prueba: any, e: React.MouseEvent) => {
@@ -155,7 +173,6 @@ export default function AsignarPrueba() {
     setModalOpen(true);
     setLoadingPreview(true);
     setPreviewQuestions([]);
-    cargarCandidatos();
 
     try {
       const { data, error } = await supabase
@@ -170,67 +187,6 @@ export default function AsignarPrueba() {
       console.error('Error al cargar preguntas:', error.message);
     } finally {
       setLoadingPreview(false);
-    }
-  };
-
-  const cargarCandidatos = async () => {
-    setLoadingCandidates(true);
-    setCandidates([]);
-    setSelectedCandidates([]);
-    setSearchCandidate('');
-    setAssignMessage(null);
-    try {
-      const { data, error } = await supabase
-        .from('candidates')
-        .select('id, full_name, paternal_surname, maternal_surname, headquarter')
-        .order('full_name', { ascending: true });
-      if (error) throw error;
-      if (data) setCandidates(data);
-    } catch (error: any) {
-      console.error('Error al cargar candidatos:', error.message);
-    } finally {
-      setLoadingCandidates(false);
-    }
-  };
-
-  const toggleCandidate = (id: string) => {
-    setSelectedCandidates(prev =>
-      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-    );
-  };
-
-  const handleConfirmAssign = async () => {
-    if (!previewTest || selectedCandidates.length === 0) return;
-    setAssigning(true);
-    setAssignMessage(null);
-    try {
-      const rows = selectedCandidates.map(candidate_id => ({
-        candidate_id,
-        test_id: previewTest.id,
-        status: 'pendiente' as const
-      }));
-
-      const { error } = await supabase
-        .from('candidate_results')
-        .insert(rows);
-
-      if (error) throw error;
-
-      setAssignMessage({
-        type: 'success',
-        text: `Prueba "${previewTest.name}" asignada a ${rows.length} candidato(s).`
-      });
-
-      // También la añadimos a la selección del generador de enlaces
-      if (!selectedTests.some(t => t.id === previewTest.id)) {
-        setSelectedTests([...selectedTests, previewTest]);
-      }
-      setSelectedCandidates([]);
-    } catch (error: any) {
-      console.error('Error al asignar la prueba:', error.message);
-      setAssignMessage({ type: 'error', text: error.message });
-    } finally {
-      setAssigning(false);
     }
   };
 
@@ -254,8 +210,14 @@ export default function AsignarPrueba() {
     <div className="bg-[#f9f9f7] text-[#202221] flex min-h-screen font-sans overflow-x-hidden relative">
       <SideNavBar role="aplicador" title="Portal Clínico" />
 
+      {showSuccessToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#123440] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-bounce">
+          <CheckCircle2 size={20} className="text-[#9DBA3A]" />
+          <p className="text-xs font-bold">¡Límite de usuarios actualizado con éxito!</p>
+        </div>
+      )}
+
       <div className="flex-1 ml-64 min-h-screen flex flex-col">
-        
         <header className="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 flex justify-between items-center px-8 py-4 shadow-sm">
           <div className="relative w-64 hidden lg:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -267,13 +229,11 @@ export default function AsignarPrueba() {
               className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-transparent rounded-full text-xs focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all placeholder:text-slate-400 font-medium text-[#202221]"
             />
           </div>
-
           <div className="flex items-center gap-3 ml-auto text-[#123440]">
             <button className="p-2 hover:bg-slate-50 rounded-full transition-colors relative cursor-pointer">
               <Bell size={18} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
             </button>
-            
           </div>
         </header>
 
@@ -288,8 +248,6 @@ export default function AsignarPrueba() {
           </section>
 
           <div className="grid grid-cols-12 gap-6 items-start">
-            
-            {/* LADO IZQUIERDO: Catálogo de Pruebas */}
             <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
               <div className="flex justify-between items-center">
                 <h3 className="font-headline text-sm font-bold text-[#123440]">Catálogo de Pruebas Disponibles</h3>
@@ -370,7 +328,6 @@ export default function AsignarPrueba() {
               </div>
             </div>
 
-            {/* LADO DERECHO: Generador de links y resumen de pruebas */}
             <div className="col-span-12 lg:col-span-4 sticky top-24">
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(18,52,64,0.04)] space-y-6">
                 <div className="flex items-center gap-3">
@@ -431,7 +388,7 @@ export default function AsignarPrueba() {
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Límite de usuarios</label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <input 
                         type="number" 
                         min="1" 
@@ -440,8 +397,17 @@ export default function AsignarPrueba() {
                         onChange={(e) => setLimiteUsuarios(Number(e.target.value))} 
                         className="w-20 bg-slate-100 border border-transparent rounded-xl py-2 px-3 text-center text-xs font-bold text-[#123440] focus:outline-none focus:ring-2 focus:ring-[#123440] focus:bg-white transition-all" 
                       />
-                      <p className="text-[11px] text-slate-400 font-medium">Personas autorizadas para usar este enlace.</p>
+                      <button 
+                        onClick={handleUpdateLimit}
+                        disabled={!generatedLinkId || isUpdatingLimit}
+                        className="flex-1 bg-slate-200 hover:bg-[#123440] hover:text-white text-[#123440] py-2 px-3 rounded-xl font-headline font-bold text-[11px] transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
+                        title={generatedLink ? "Actualizar límite en la base de datos" : "Primero genera un enlace"}
+                      >
+                        {isUpdatingLimit ? <RefreshCw size={12} className="animate-spin" /> : null}
+                        <span>{isUpdatingLimit ? 'Actualizando...' : 'Actualizar Límite'}</span>
+                      </button>
                     </div>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">Personas autorizadas para usar este enlace.</p>
                   </div>
 
                   <button 
@@ -469,217 +435,18 @@ export default function AsignarPrueba() {
                 </div>
               </div>
             </div>
-
           </div>
         </main>
       </div>
 
-      {/* MODAL DE PREVISUALIZACIÓN DE PREGUNTAS */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <div>
-                <h3 className="font-headline font-bold text-[#123440] text-lg">{previewTest?.name}</h3>
-                <span className="text-xs text-slate-500 font-medium">Tipo: {previewTest?.type || previewTest?.name}</span>
-              </div>
-              <button 
-                onClick={() => setModalOpen(false)}
-                className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* RESUMEN DE LA PRUEBA */}
-            <div className="px-6 py-4 bg-white border-b border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
-                  <ClipboardList size={16} />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Prueba</p>
-                  <p className="text-xs font-bold text-[#123440] truncate">{previewTest?.name}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
-                  <Clock size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Duración</p>
-                  <p className="text-xs font-bold text-[#123440]">Estimada: {previewTest?.tiempo ?? 60} min</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-[#f4f6f0] text-[#69943A] flex items-center justify-center shrink-0">
-                  <ListChecks size={16} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Ítems</p>
-                  <p className="text-xs font-bold text-[#123440]">
-                    {previewTest?.config_json?.totalItems || previewQuestions.length || 137} total
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6 overflow-y-auto flex-1 bg-[#f9f9f7]">
-              {loadingPreview ? (
-                <div className="flex justify-center items-center py-10">
-                  <RefreshCw className="animate-spin text-[#69943A]" size={24} />
-                </div>
-              ) : previewQuestions.length === 0 ? (
-                <p className="text-center text-sm text-slate-500">No hay reactivos registrados para esta prueba aún.</p>
-              ) : (
-                <div className="space-y-4">
-                  {previewTest?.type === 'cleaver' || previewTest?.name === 'Test Cleaver' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {previewQuestions.map((q) => (
-                        <div key={q.id} className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
-                          <div className="text-xs font-bold text-slate-400 mb-2 border-b border-slate-100 pb-1">
-                            Grupo {q.content_jsonb?.grupo}
-                          </div>
-                          <ul className="text-sm text-[#123440] font-medium space-y-1">
-                            {q.content_jsonb?.palabras?.map((palabra: string, i: number) => (
-                              <li key={i} className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#9DBA3A]"></div>
-                                {palabra}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {previewQuestions.map((q, index) => {
-                        if (q.content_jsonb?.tipo_pregunta === 'ordenar_oracion_vf') {
-                          return (
-                            <div key={q.id} className="bg-white p-4 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                              <div className="flex justify-between items-center text-xs font-bold text-slate-400 border-b border-slate-100 pb-2">
-                                <span>Serie {q.content_jsonb?.serie}</span>
-                                <span className="bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-md text-[10px] uppercase tracking-wider">
-                                  Ordenar y V/F
-                                </span>
-                              </div>
-
-                              <p className="text-xs font-bold text-[#123440]">
-                                {index + 1}. Ordena las palabras para formar una oración correcta e indica si es Verdadera o Falsa.
-                              </p>
-
-                              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1.5 text-center">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Oración desordenada</span>
-                                <span className="text-xs font-mono font-bold text-[#123440] bg-white px-3 py-1.5 rounded-lg border border-slate-200 inline-block">
-                                  {q.content_jsonb?.oracion_desordenada}
-                                </span>
-                              </div>
-
-                              <div className="space-y-2 pt-1">
-                                <div className="flex gap-2">
-                                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg py-1.5 text-center text-xs font-bold text-slate-600">
-                                    Verdadero
-                                  </div>
-                                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg py-1.5 text-center text-xs font-bold text-slate-600">
-                                    Falso
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        if (q.content_jsonb?.tipo_pregunta === 'secuencia_numerica') {
-                          return (
-                            <div key={q.id} className="bg-white p-4 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                              <div className="flex justify-between items-center text-xs font-bold text-slate-400 border-b border-slate-100 pb-2">
-                                <span>Serie {q.content_jsonb?.serie}</span>
-                                <span className="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-md text-[10px] uppercase tracking-wider">
-                                  Secuencia Numérica
-                                </span>
-                              </div>
-
-                              <p className="text-xs font-bold text-[#123440]">
-                                {index + 1}. Continúa la secuencia numérica completando los espacios faltantes.
-                              </p>
-
-                              <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                                {q.content_jsonb?.secuencia?.map((num: string, i: number) => (
-                                  <span key={i} className="bg-white text-[#123440] font-bold text-xs px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs">
-                                    {num}
-                                  </span>
-                                ))}
-                                
-                                {Array.from({ length: q.content_jsonb?.espacios_faltantes || 0 }).map((_, i) => (
-                                  <span key={`empty-${i}`} className="bg-blue-50 text-blue-600 font-bold text-xs px-3.5 py-1.5 rounded-lg border border-dashed border-blue-300 shadow-2xs">
-                                    ?
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        if (q.content_jsonb?.tipo_pregunta === 'igual_opuesto') {
-                          return (
-                            <div key={q.id} className="bg-white p-4 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                              <div className="flex justify-between items-center text-xs font-bold text-slate-400 border-b border-slate-100 pb-2">
-                                <span>Serie {q.content_jsonb?.serie}</span>
-                                <span className="bg-[#9DBA3A]/20 text-[#69943A] px-2.5 py-0.5 rounded-md text-[10px] uppercase tracking-wider">
-                                  Igual o Opuesto
-                                </span>
-                              </div>
-
-                              <p className="text-xs font-bold text-[#123440]">
-                                {index + 1}. {q.content_jsonb?.pregunta}
-                              </p>
-
-                              <div className="flex items-center justify-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                                <div className="flex-1 bg-white py-2 px-3 rounded-lg border border-slate-200 text-center shadow-2xs">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Palabra 1</span>
-                                  <span className="text-xs font-bold text-[#123440]">{q.content_jsonb?.palabra_1}</span>
-                                </div>
-
-                                <div className="text-slate-400 font-bold text-xs px-1">
-                                  VS
-                                </div>
-
-                                <div className="flex-1 bg-white py-2 px-3 rounded-lg border border-slate-200 text-center shadow-2xs">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Palabra 2</span>
-                                  <span className="text-xs font-bold text-[#123440]">{q.content_jsonb?.palabra_2}</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div key={q.id} className="bg-white p-4 border border-slate-200 rounded-xl space-y-3 shadow-sm">
-                            <p className="text-xs font-bold text-[#123440]">
-                              {index + 1}. {q.content_jsonb?.pregunta || q.content_jsonb?.text || q.content_jsonb?.pregunta_texto || 'Pregunta sin texto'}
-                            </p>
-                            
-                            {q.content_jsonb?.opciones && (
-                              <ul className="space-y-1.5 pl-2">
-                                {q.content_jsonb.opciones.map((op: any, i: number) => (
-                                  <li key={i} className="text-xs text-slate-600 flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                    <span className="font-bold text-[#123440]">{op.letra || op.key || i + 1})</span>
-                                    <span>{op.texto || op.text || op}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL MODULARIZADO DE PREVISUALIZACIÓN */}
+      <TestPreviewModal 
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        previewTest={previewTest}
+        previewQuestions={previewQuestions}
+        loadingPreview={loadingPreview}
+      />
     </div>
   );
 }

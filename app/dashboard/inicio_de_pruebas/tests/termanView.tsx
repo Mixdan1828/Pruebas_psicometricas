@@ -9,16 +9,76 @@ interface TermanViewProps {
 }
 
 const SERIES_DEFINITIONS = [
-  { title: "Serie I: Preguntas de opción múltiple", start: 1, end: 16, timeMinutes: 2, defaultInstruction: "Seleccione la opción que complete correctamente la oración." },
-  { title: "Serie II: Juicio", start: 17, end: 27, timeMinutes: 2, defaultInstruction: "Seleccione la opción que responda mejor a la pregunta de sentido común." },
-  { title: "Serie III: Vocabulario", start: 28, end: 57, timeMinutes: 2, defaultInstruction: "Seleccione si las dos palabras tienen el mismo significado (Igual) o significados opuestos (Opuesto)." },
-  { title: "Serie IV: Selección Lógica", start: 58, end: 75, timeMinutes: 3, defaultInstruction: "Seleccione exactamente 2 opciones." },
-  { title: "Serie V: Aritmética", start: 76, end: 87, timeMinutes: 5, defaultInstruction: "Resuelva el problema matemático y escriba la respuesta numérica correcta." },
-  { title: "Serie VI: Juicio Práctico", start: 88, end: 107, timeMinutes: 2, defaultInstruction: "Responda Sí o No según corresponda." },
-  { title: "Serie VII: Analogías", start: 108, end: 127, timeMinutes: 2, defaultInstruction: "Seleccione la opción que complete la relación analógica adecuadamente." },
-  { title: "Serie VIII: Ordenación de Oraciones", start: 128, end: 144, timeMinutes: 3, defaultInstruction: "Ordene mentalmente la oración y determine si es Verdadera o Falsa." },
-  { title: "Serie IX: Clasificación", start: 145, end: 162, timeMinutes: 3, defaultInstruction: "Seleccione la palabra que no pertenece a la misma categoría." },
-  { title: "Serie X: Series Numéricas", start: 163, end: 173, timeMinutes: 4, defaultInstruction: "Escriba los dos números que continúan la secuencia lógica." }
+  { 
+    title: "Serie I: Preguntas de opción múltiple", 
+    start: 1, 
+    end: 16, 
+    timeMinutes: 2, 
+    instruction: "Lea cada una de las oraciones y seleccione la letra de la opción que mejor complete el sentido de la frase." 
+  },
+  { 
+    title: "Serie II: Juicio", 
+    start: 17, 
+    end: 27, 
+    timeMinutes: 2, 
+    instruction: "Lea cada pregunta y seleccione la letra de la opción que exprese el juicio más acertado y lógico de acuerdo con el sentido común." 
+  },
+  { 
+    title: "Serie III: Vocabulario", 
+    start: 28, 
+    end: 57, 
+    timeMinutes: 2, 
+    instruction: "Analice las dos palabras de cada reactivo. Seleccione 'Igual' si significan lo mismo o tienen un sentido similar, o 'Opuesto' si sus significados son contrarios." 
+  },
+  { 
+    title: "Serie IV: Selección Lógica", 
+    start: 58, 
+    end: 75, 
+    timeMinutes: 3, 
+    instruction: "Seleccione exactamente 2 opciones de la lista que correspondan lógicamente a la categoría o condición solicitada." 
+  },
+  { 
+    title: "Serie V: Aritmética", 
+    start: 76, 
+    end: 87, 
+    timeMinutes: 5, 
+    instruction: "Resuelva mentalmente o mediante operaciones el problema matemático planteado y escriba la respuesta numérica correcta." 
+  },
+  { 
+    title: "Serie VI: Juicio Práctico", 
+    start: 88, 
+    end: 107, 
+    timeMinutes: 2, 
+    instruction: "Indique si la respuesta o solución propuesta a cada situación práctica es adecuada seleccionando Sí o No." 
+  },
+  { 
+    title: "Serie VII: Analogías", 
+    start: 108, 
+    end: 127, 
+    timeMinutes: 2, 
+    instruction: "Analice la relación entre las palabras de la premisa y seleccione la opción que complete correctamente la analogía." 
+  },
+  { 
+    title: "Serie VIII: Ordenación de Oraciones", 
+    start: 128, 
+    end: 144, 
+    timeMinutes: 3, 
+    instruction: "Lea las palabras desordenadas, analice mentalmente la oración resultante e indique si el enunciado planteado es Verdadero o Falso." 
+  },
+  { 
+    title: "Serie IX: Clasificación", 
+    start: 145, 
+    end: 162, 
+    timeMinutes: 3, 
+    instruction: "De las cinco opciones de cada pregunta, seleccione aquella palabra que no pertenece a la misma categoría o grupo de las demás." 
+  },
+  { 
+    title: "Serie X: Series Numéricas", 
+    start: 163, 
+    end: 173, 
+    timeMinutes: 4, 
+    instruction: "Analice la progresión lógica de la serie e introduzca los dos valores (números, decimales o fracciones) que continúan la secuencia." 
+  }
 ];
 
 export default function TermanView({ testData, onComplete }: TermanViewProps) {
@@ -40,7 +100,6 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // Memorización de preguntas para evitar re-parsear JSON en cada render
   const allQuestions = useMemo(() => {
     const rawQuestions = testData?.test_questions || [];
     return rawQuestions.map((q: any, index: number) => {
@@ -62,16 +121,13 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
 
   const finishTest = useCallback(() => {
     if (hasCompletedRef.current) return;
-
     hasCompletedRef.current = true;
-    // Si el guardado falla en el resolver, se rehabilita y permite reintentar
     Promise.resolve(onCompleteRef.current(userAnswersRef.current))
       .catch(() => {
         hasCompletedRef.current = false;
       });
   }, []);
 
-  // Temporizador independiente por serie
   useEffect(() => {
     if (hasCompletedRef.current) return;
 
@@ -87,7 +143,6 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     return () => clearInterval(timer);
   }, [currentSeriesIndex]);
 
-  // Fin de tiempo por serie: avanza automáticamente o cierra la prueba
   useEffect(() => {
     if (hasCompletedRef.current) return;
     if (seriesTimes[currentSeriesIndex] > 0) return;
@@ -121,18 +176,25 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     }));
   };
 
+  // Validación de respuestas según el tipo y rango de la pregunta
   const checkIsAnswered = useCallback((qNum: number, ans: any) => {
     if (ans === undefined || ans === null || ans === '') return false;
+    
+    // Serie IV (58-75): Debe seleccionar exactamente 2 letras (a,b,c,d,e)
     if (qNum >= 58 && qNum <= 75) {
       return Array.isArray(ans) && ans.length === 2;
     }
+    
+    // Serie VIII (128-144): Debe tener seleccionado V ('v') o F ('f')
     if (qNum >= 128 && qNum <= 144) {
-      const tieneTexto = Boolean(ans?.oracionOrdenada && typeof ans.oracionOrdenada === 'string' && ans.oracionOrdenada.trim() !== '');
-      return Boolean(tieneTexto && ans?.verdadFalso);
+      return Boolean(ans?.verdadFalso);
     }
+    
+    // Serie X (163-173): Debe tener ambos campos de secuencia numérica/fracción llenos
     if (qNum >= 163 && qNum <= 173) {
-      return Boolean(ans?.num1 !== undefined && ans?.num1 !== '' && ans?.num2 !== undefined && ans?.num2 !== '');
+      return Boolean(ans?.num1 !== undefined && String(ans?.num1).trim() !== '' && ans?.num2 !== undefined && String(ans?.num2).trim() !== '');
     }
+    
     return true;
   }, []);
 
@@ -208,6 +270,11 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
             </p>
           </div>
 
+          {/* APARTADO DE INSTRUCCIONES DE LA SERIE */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700">
+            <span className="font-bold">Instrucciones:</span> {currentSeriesDef.instruction}
+          </div>
+
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <button
               type="button"
@@ -238,7 +305,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
               <button
                 type="button"
                 onClick={finishTest}
-                className="flex items-center gap-2 bg-[#416912] text-black hover:bg-green font-bold rounded-xl px-4 py-2.5 transition-all shadow-sm text-sm"
+                className="flex items-center gap-2 bg-[#416912] text-white hover:bg-green-700 font-bold rounded-xl px-4 py-2.5 transition-all shadow-sm text-sm"
               >
                 <span className="uppercase tracking-wider">Finalizar</span>
                 <CheckCircle size={18} aria-hidden="true" />
@@ -262,7 +329,6 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
             const opciones = content.opciones || content.options || content.choices || [];
             const questionTitle = formatOptionText(content.pregunta || content.text || content.enunciado || content.title) || 
               ((qNum >= 28 && qNum <= 57) ? "¿Las siguientes palabras son Iguales u Opuestas?" : `Pregunta ${qNum}`);
-            const instruction = content.instruccion || content.instrucciones || currentSeriesDef.defaultInstruction;
 
             return (
               <div key={q.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
@@ -281,25 +347,24 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   {questionTitle}
                 </h3>
 
-                {/* OPCIONES MÚLTIPLES */}
-                {((qNum >= 1 && qNum <= 27) || (qNum >= 108 && qNum <= 127) || (qNum >= 145 && qNum <= 162)) && (
+                {/* 1. Series 1-16 y 108-127: Opción múltiple guardando minúsculas a, b, c, d */}
+                {(((qNum >= 1 && qNum <= 16) || (qNum >= 108 && qNum <= 127))) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const val = typeof op === 'object' ? (op.letra || op.id || op.texto || op.label || opIndex) : op;
+                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd'
                       const label = formatOptionText(op);
-                      const letter = String.fromCharCode(65 + opIndex);
-                      const isSelected = ans === val;
+                      const isSelected = ans === letter;
 
                       return (
                         <button
                           key={opIndex}
                           type="button"
-                          onClick={() => handleSelectAnswer(q.id, val)}
+                          onClick={() => handleSelectAnswer(q.id, letter)}
                           className={`flex items-center p-4 border-2 rounded-xl text-left transition-all ${
                             isSelected ? 'bg-[#BEEE89]/30 border-[#416912]' : 'bg-slate-50 hover:bg-slate-100 border-transparent'
                           }`}
                         >
-                          <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mr-3 ${
+                          <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mr-3 uppercase ${
                             isSelected ? 'bg-[#416912] text-white' : 'bg-slate-200 text-slate-700'
                           }`}>
                             {letter}
@@ -311,7 +376,36 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* Serie III: Vocabulario */}
+                {/* 2. Series 17-27: Opción múltiple estándar a, b, c */}
+                {((qNum >= 17 && qNum <= 27)) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {opciones.map((op: any, opIndex: number) => {
+                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c'
+                      const label = formatOptionText(op);
+                      const isSelected = ans === letter;
+
+                      return (
+                        <button
+                          key={opIndex}
+                          type="button"
+                          onClick={() => handleSelectAnswer(q.id, letter)}
+                          className={`flex items-center p-4 border-2 rounded-xl text-left transition-all ${
+                            isSelected ? 'bg-[#BEEE89]/30 border-[#416912]' : 'bg-slate-50 hover:bg-slate-100 border-transparent'
+                          }`}
+                        >
+                          <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mr-3 uppercase ${
+                            isSelected ? 'bg-[#416912] text-white' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {letter}
+                          </span>
+                          <span className="font-medium text-slate-800">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 3. Serie III (28-57): Vocabulario -> Guarda 'i' (igual) o 'o' (opuesto) */}
                 {(qNum >= 28 && qNum <= 57) && (() => {
                   const p1 = formatOptionText(content.palabra_1 || content.palabra1 || content.p1);
                   const p2 = formatOptionText(content.palabra_2 || content.palabra2 || content.p2);
@@ -330,16 +424,19 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                       )}
 
                       <div className="grid grid-cols-2 gap-4">
-                        {['Igual', 'Opuesto'].map((op) => (
+                        {[
+                          { label: 'Igual', value: 'i' },
+                          { label: 'Opuesto', value: 'o' }
+                        ].map((op) => (
                           <button
-                            key={op}
+                            key={op.value}
                             type="button"
-                            onClick={() => handleSelectAnswer(q.id, op)}
+                            onClick={() => handleSelectAnswer(q.id, op.value)}
                             className={`p-3 rounded-xl border-2 text-center font-bold transition-all ${
-                              ans === op ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
+                              ans === op.value ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
                             }`}
                           >
-                            {op}
+                            {op.label}
                           </button>
                         ))}
                       </div>
@@ -347,23 +444,23 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   );
                 })()}
 
-                {/* Serie IV: Selección Lógica */}
+                {/* 4. Serie IV (58-75): Selección Lógica -> Selecciona 2 letras de 'a,b,c,d,e' */}
                 {(qNum >= 58 && qNum <= 75) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const val = typeof op === 'object' ? (op.letra || op.id || op.texto || opIndex) : op;
+                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd', 'e'
                       const label = formatOptionText(op);
                       const currentSelected: string[] = Array.isArray(ans) ? ans : [];
-                      const isChecked = currentSelected.includes(val);
+                      const isChecked = currentSelected.includes(letter);
 
                       const handleCheckboxClick = () => {
                         if (isChecked) {
-                          handleSelectAnswer(q.id, currentSelected.filter(item => item !== val));
+                          handleSelectAnswer(q.id, currentSelected.filter(item => item !== letter));
                         } else {
                           if (currentSelected.length < 2) {
-                            handleSelectAnswer(q.id, [...currentSelected, val]);
+                            handleSelectAnswer(q.id, [...currentSelected, letter]);
                           } else {
-                            handleSelectAnswer(q.id, [currentSelected[1], val]);
+                            handleSelectAnswer(q.id, [currentSelected[1], letter]);
                           }
                         }
                       };
@@ -377,11 +474,11 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                             isChecked ? 'bg-[#BEEE89]/30 border-[#416912]' : 'bg-slate-50 hover:bg-slate-100 border-transparent'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                            isChecked ? 'bg-[#416912] border-[#416912] text-white' : 'border-slate-400 bg-white'
+                          <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mr-3 uppercase ${
+                            isChecked ? 'bg-[#416912] text-white' : 'bg-slate-200 text-slate-700'
                           }`}>
-                            {isChecked && <span className="material-symbols-outlined text-[16px]"></span>}
-                          </div>
+                            {letter}
+                          </span>
                           <span className="font-medium text-slate-800">{label}</span>
                         </button>
                       );
@@ -389,7 +486,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* Serie V: Aritmética */}
+                {/* 5. Serie V (76-87): Aritmética -> Guarda string (valor abierto) */}
                 {(qNum >= 76 && qNum <= 87) && (
                   <input
                     type="text"
@@ -400,25 +497,28 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   />
                 )}
 
-                {/* Serie VI: Juicio Práctico */}
+                {/* 6. Serie VI (88-107): Juicio Práctico -> Guarda palabras "si" o "no" */}
                 {(qNum >= 88 && qNum <= 107) && (
                   <div className="grid grid-cols-2 gap-4">
-                    {['Sí', 'No'].map((op) => (
+                    {[
+                      { label: 'Sí', value: 'si' },
+                      { label: 'No', value: 'no' }
+                    ].map((op) => (
                       <button
-                        key={op}
+                        key={op.value}
                         type="button"
-                        onClick={() => handleSelectAnswer(q.id, op)}
+                        onClick={() => handleSelectAnswer(q.id, op.value)}
                         className={`p-3 rounded-xl border-2 text-center font-bold transition-all ${
-                          ans === op ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
+                          ans === op.value ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
                         }`}
                       >
-                        {op}
+                        {op.label}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {/* Serie VIII: Ordenación + V/F */}
+                {/* 7. Serie VIII (128-144): Ordenar oración eliminando el input de texto, guardando únicamente 'v' o 'f' */}
                 {(qNum >= 128 && qNum <= 144) && (() => {
                   const rawOracion = content.oracion_desordenada || content.oracion || "";
                   const oracionTexto = typeof rawOracion === 'string' ? rawOracion : formatOptionText(rawOracion);
@@ -427,28 +527,24 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   return (
                     <div className="space-y-4">
                       {oracionTexto && (
-                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center font-bold text-amber-900">
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center font-bold text-amber-900 text-lg">
                           &quot;{oracionTexto}&quot;
                         </div>
                       )}
-                      <input
-                        type="text"
-                        placeholder="Escribe la oración ordenada..."
-                        className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none"
-                        value={currentObj.oracionOrdenada || ''}
-                        onChange={(e) => handleSelectAnswer(q.id, { ...currentObj, oracionOrdenada: e.target.value })}
-                      />
                       <div className="grid grid-cols-2 gap-4">
-                        {['Verdadero', 'Falso'].map((op) => (
+                        {[
+                          { label: 'Verdadero', value: 'v' },
+                          { label: 'Falso', value: 'f' }
+                        ].map((op) => (
                           <button
-                            key={op}
+                            key={op.value}
                             type="button"
-                            onClick={() => handleSelectAnswer(q.id, { ...currentObj, verdadFalso: op })}
-                            className={`p-3 rounded-xl border-2 text-center font-bold transition-all ${
-                              currentObj.verdadFalso === op ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
+                            onClick={() => handleSelectAnswer(q.id, { ...currentObj, verdadFalso: op.value })}
+                            className={`p-4 rounded-xl border-2 text-center font-bold transition-all text-base ${
+                              currentObj.verdadFalso === op.value ? 'bg-[#BEEE89]/30 border-[#416912] text-slate-900' : 'bg-slate-50 hover:bg-slate-100 border-transparent text-slate-700'
                             }`}
                           >
-                            {op}
+                            {op.label}
                           </button>
                         ))}
                       </div>
@@ -456,7 +552,36 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   );
                 })()}
 
-                {/* Serie X: Series Numéricas */}
+                {/* 8. Serie IX (145-162): Opción múltiple a, b, c, d, e */}
+                {(qNum >= 145 && qNum <= 162) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {opciones.map((op: any, opIndex: number) => {
+                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd', 'e'
+                      const label = formatOptionText(op);
+                      const isSelected = ans === letter;
+
+                      return (
+                        <button
+                          key={opIndex}
+                          type="button"
+                          onClick={() => handleSelectAnswer(q.id, letter)}
+                          className={`flex items-center p-4 border-2 rounded-xl text-left transition-all ${
+                            isSelected ? 'bg-[#BEEE89]/30 border-[#416912]' : 'bg-slate-50 hover:bg-slate-100 border-transparent'
+                          }`}
+                        >
+                          <span className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold text-sm mr-3 uppercase ${
+                            isSelected ? 'bg-[#416912] text-white' : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {letter}
+                          </span>
+                          <span className="font-medium text-slate-800">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 9. Serie X (163-173): Secuencias numéricas / fracciones (inputs de texto abiertos que permiten números, diagonales '/' y puntos decimales '.') */}
                 {(qNum >= 163 && qNum <= 173) && (() => {
                   const secuencia = 
                     content.secuencia || 
@@ -493,15 +618,15 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                       )}
                       <div className="grid grid-cols-2 gap-4">
                         <input
-                          type="number"
-                          placeholder="Número 1"
+                          type="text"
+                          placeholder="Primer valor (ej. 1/2, 3.5)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num1 ?? ''}
                           onChange={(e) => handleSelectAnswer(q.id, { ...currentObj, num1: e.target.value })}
                         />
                         <input
-                          type="number"
-                          placeholder="Número 2"
+                          type="text"
+                          placeholder="Segundo valor (ej. 3/4, 10.2)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num2 ?? ''}
                           onChange={(e) => handleSelectAnswer(q.id, { ...currentObj, num2: e.target.value })}
@@ -510,10 +635,6 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                     </div>
                   );
                 })()}
-
-                <p className="mt-4 text-center text-slate-400 text-xs italic">
-                  {instruction}
-                </p>
               </div>
             );
           })
