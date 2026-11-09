@@ -127,11 +127,8 @@ export default function RavenView({ testData, onComplete }: RavenViewProps) {
             <Sparkles size={12} /> Evaluación Psicométrica Activa
           </div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            Test de Matrices Progresivas de Raven
+            Test Raven
           </h1>
-          <p className="text-xs text-slate-300">
-            Mide la capacidad de razonamiento analógico, percepción y abstracción.
-          </p>
         </div>
 
         {/* Cronómetro Global Integrado en el Banner */}

@@ -214,6 +214,7 @@ export type Database = {
           is_online: boolean | null
           role: Database["public"]["Enums"]["user_role"] | null
           status: Database["public"]["Enums"]["user_status"] | null
+          avatar_url: string | null
         }
         Insert: {
           created_at?: string | null
@@ -223,6 +224,7 @@ export type Database = {
           is_online?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          avatar_url?: string | null
         }
         Update: {
           created_at?: string | null
@@ -232,6 +234,7 @@ export type Database = {
           is_online?: boolean | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -296,6 +299,35 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      notification_dismissals: {
+        Row: {
+          id: string
+          user_id: string
+          notification_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          notification_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          notification_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_dismissals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

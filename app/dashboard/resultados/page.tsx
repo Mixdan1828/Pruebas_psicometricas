@@ -10,7 +10,7 @@ import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFCl
 import { generarPDFHojaRespuestasRaven, esTestRaven } from "./pdf/generarPDFRaven";
 // Importamos el modal modular y el SideNavBar
 import { ModalVistaPreviaPruebas } from "./ModalVistaPreviaPruebas";
-import SideNavBar from "@/componentes/SideNavBar";
+import SideNavBar from "@/app/componentes/SideNavBar";
 
 import {
   Loader2,
