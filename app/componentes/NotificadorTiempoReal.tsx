@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, UserPlus, FileCheck } from 'lucide-react';
+import { Bell, UserPlus, FileText, FileCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
@@ -13,7 +13,7 @@ interface NotificacionItem {
   mensaje: string;
   urlDestino: string;
   fecha?: string;
-  tipo: 'registro' | 'test_completado';
+  tipo: 'registro' | 'test_pendiente' | 'test_completado';
 }
 
 export default function NotificadorTiempoReal() {
@@ -122,63 +122,121 @@ export default function NotificadorTiempoReal() {
         }
 
         // ==========================================
-        // FLUJO PARA APLICADOR: Tests Creados/Asignados por él
+        // FLUJO PARA APLICADOR: Tests (Pendientes y Completados)
+        // Relacionando 'candidate_results' con 'candidates' y 'tests'
         // ==========================================
         if (rol === 'aplicador') {
-          // Consultar solo los tests completados que fueron creados/asignados por este usuario específico
-          // (Asegúrate de que 'created_by' o el campo que uses apunte al ID del aplicador)
           const { data: testsRecientes, error: errorTests } = await supabase
-            .from('candidate_results') // Cambiar por el nombre real de tu tabla si es distinta
-            .select('id, candidate_name, test_name, completed_at, user_id')
-            .eq('user_id', user.id) // <-- Filtro clave para mostrar solo los suyos
-            .order('completed_at', { ascending: false })
-            .limit(20);
+            .from('candidate_results')
+            .select(`
+              id,
+              status,
+              created_at,
+              updated_at,
+              user_id,
+              candidate:candidate_id (full_name),
+              test:test_id (name)
+            `)
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(30);
 
           if (!errorTests && testsRecientes) {
-            testsRecientes.forEach((test: any) => {
-              const idNotif = `test-comp-${test.id}`;
-              if (!idsDescartados.has(idNotif)) {
-                notifsIniciales.push({
-                  id: idNotif,
-                  titulo: 'Test Completado',
-                  mensaje: `El candidato ${test.candidate_name || 'Desconocido'} ha finalizado la evaluación: ${test.test_name || 'Terman Merrill'}.`,
-                  urlDestino: `/dashboard/aplicador_de_pruebas`,
-                  fecha: test.completed_at,
-                  tipo: 'test_completado'
-                });
+            testsRecientes.forEach((item: any) => {
+              const candidatoNombre = item.candidate?.full_name || 'Candidato';
+              const testNombre = item.test?.name || 'Evaluación Psicométrica';
+              const estatus = item.status; // 'pendiente' o 'completado'
+
+              if (estatus === 'pendiente') {
+                const idNotif = `test-pend-${item.id}`;
+                if (!idsDescartados.has(idNotif)) {
+                  notifsIniciales.push({
+                    id: idNotif,
+                    titulo: 'Test Iniciado / Pendiente',
+                    mensaje: `El candidato ${candidatoNombre} ha iniciado la evaluación: ${testNombre}.`,
+                    urlDestino: `/dashboard/aplicador_de_pruebas`,
+                    fecha: item.created_at,
+                    tipo: 'test_pendiente'
+                  });
+                }
+              } else if (estatus === 'completado') {
+                const idNotif = `test-comp-${item.id}`;
+                if (!idsDescartados.has(idNotif)) {
+                  notifsIniciales.push({
+                    id: idNotif,
+                    titulo: 'Test Completado',
+                    mensaje: `El candidato ${candidatoNombre} ha finalizado la evaluación: ${testNombre}.`,
+                    urlDestino: `/dashboard/aplicador_de_pruebas`,
+                    fecha: item.updated_at || item.created_at,
+                    tipo: 'test_completado'
+                  });
+                }
               }
             });
           }
 
-          // Suscripción en tiempo real filtrada para los tests de este aplicador
+          // Suscripción en tiempo real para cambios en 'candidate_results' del aplicador
           testsChannel = supabase
-            .channel(`realtime_aplicador_tests_${user.id}`)
+            .channel(`realtime_aplicador_candidate_results_${user.id}`)
             .on(
               'postgres_changes',
               { 
-                event: 'INSERT', 
+                event: '*', // Escucha INSERT y UPDATE para detectar cambios de estatus
                 schema: 'public', 
                 table: 'candidate_results',
-                filter: `user_id=eq.${user.id!}` // <-- Filtro en tiempo real por el ID del aplicador
+                filter: `user_id=eq.${user.id!}`
               },
-              (payload) => {
-                const nuevoTest = payload.new as any;
-                if (!nuevoTest) return;
+              async (payload) => {
+                const record = payload.new as any;
+                if (!record) return;
 
-                const idNotif = `test-comp-${nuevoTest.id}`;
-                const nuevaNotif: NotificacionItem = {
-                  id: idNotif,
-                  titulo: 'Test Completado',
-                  mensaje: `El candidato ${nuevoTest.candidate_name || 'Desconocido'} ha finalizado la evaluación.`,
-                  urlDestino: `/dashboard/aplicador_de_pruebas`,
-                  fecha: nuevoTest.completed_at || new Date().toISOString(),
-                  tipo: 'test_completado'
-                };
+                // Consultar los datos relacionados (candidate y test) para el payload en tiempo real
+                const { data: relData } = await supabase
+                  .from('candidate_results')
+                  .select(`
+                    candidate:candidate_id (full_name),
+                    test:test_id (name)
+                  `)
+                  .eq('id', record.id)
+                  .single();
 
-                setListaNotificaciones((prev) => {
-                  if (prev.some((n) => n.id === nuevaNotif.id)) return prev;
-                  return [nuevaNotif, ...prev];
-                });
+                const candidatoNombre = (relData as any)?.candidate?.full_name || 'Candidato';
+                const testNombre = (relData as any)?.test?.name || 'Evaluación Psicométrica';
+                const estatus = record.status;
+
+                if (estatus === 'pendiente') {
+                  const idNotif = `test-pend-${record.id}`;
+                  const nuevaNotif: NotificacionItem = {
+                    id: idNotif,
+                    titulo: 'Test Iniciado / Pendiente',
+                    mensaje: `El candidato ${candidatoNombre} ha iniciado la evaluación: ${testNombre}.`,
+                    urlDestino: `/dashboard/aplicador_de_pruebas`,
+                    fecha: record.created_at || new Date().toISOString(),
+                    tipo: 'test_pendiente'
+                  };
+
+                  setListaNotificaciones((prev) => {
+                    if (prev.some((n) => n.id === nuevaNotif.id)) return prev;
+                    return [nuevaNotif, ...prev];
+                  });
+                } else if (estatus === 'completado') {
+                  const idNotif = `test-comp-${record.id}`;
+                  const nuevaNotif: NotificacionItem = {
+                    id: idNotif,
+                    titulo: 'Test Completado',
+                    mensaje: `El candidato ${candidatoNombre} ha finalizado la evaluación: ${testNombre}.`,
+                    urlDestino: `/dashboard/aplicador_de_pruebas`,
+                    fecha: record.updated_at || new Date().toISOString(),
+                    tipo: 'test_completado'
+                  };
+
+                  setListaNotificaciones((prev) => {
+                    // Si ya existía como pendiente, podemos actualizar o limpiar la anterior y agregar la de completado
+                    const filtradas = prev.filter((n) => n.id !== `test-pend-${record.id}`);
+                    if (filtradas.some((n) => n.id === nuevaNotif.id)) return filtradas;
+                    return [nuevaNotif, ...filtradas];
+                  });
+                }
               }
             )
             .subscribe();
@@ -274,7 +332,7 @@ export default function NotificadorTiempoReal() {
           <div className="fixed left-4 right-4 mx-auto top-20 max-w-sm sm:absolute sm:inset-auto sm:right-0 sm:mt-2 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[999] overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h4 className="text-xs font-bold text-[#123440] uppercase tracking-wider">
-                {userRole === 'admin' ? 'Nuevos Registros' : 'Tus Evaluaciones Completadas'} ({totalNoLeidas})
+                {userRole === 'admin' ? 'Nuevos Registros' : 'Tus Evaluaciones'} ({totalNoLeidas})
               </h4>
               {totalNoLeidas > 0 && (
                 <button 
@@ -301,8 +359,12 @@ export default function NotificadorTiempoReal() {
                     onClick={() => manejarClickNotificacion(n)}
                     className="p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 text-left"
                   >
-                    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${n.tipo === 'registro' ? 'bg-sky-50 text-sky-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                      {n.tipo === 'registro' ? <UserPlus size={16} /> : <FileCheck size={16} />}
+                    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
+                      n.tipo === 'registro' ? 'bg-sky-50 text-sky-600' : 
+                      n.tipo === 'test_pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                    }`}>
+                      {n.tipo === 'registro' ? <UserPlus size={16} /> : 
+                       n.tipo === 'test_pendiente' ? <FileText size={16} /> : <FileCheck size={16} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-[#123440]">{n.titulo}</p>
