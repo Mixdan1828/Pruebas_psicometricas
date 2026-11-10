@@ -2,11 +2,11 @@
 
 import { Component, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useParams } from 'next/navigation';
-import TermanView from '../../../../tests/termanView';
-import CleaverView from '../../../../tests/CleaverView';
-import Nom035IntegralView from '../../../../tests/Nom035IntegralView';
-import TestFinalizedView from '../../../../tests/TestFinalizedView';
-import RavenView from '../../../../tests/RavenView';
+import TermanView from '../../tests/termanView';
+import CleaverView from '../../tests/CleaverView';
+import Nom035IntegralView from '../../tests/Nom035IntegralView';
+import TestFinalizedView from '../../tests/TestFinalizedView';
+import RavenView from '../../tests/RavenView';
 
 /* ------------------------------------------------------------------ */
 /* ErrorBoundary: evita pantalla en blanco ante errores de renderizado */

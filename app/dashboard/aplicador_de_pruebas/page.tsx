@@ -343,15 +343,18 @@ export default function AplicadorDePruebas() {
   };
 
   return (
-    <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans">
+    <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans overflow-x-hidden">
       <SideNavBar 
         role="aplicador" 
         title="Panel de Aplicador" 
         onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)} 
       />
 
-      <div className="flex-1 ml-0 md:ml-64 min-h-screen flex flex-col w-full">
-        <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16">
+      {/* Contenedor principal que ajusta dinámicamente su margen izquierdo según si el menú está colapsado (w-20 -> pl-20) o expandido (w-64 -> pl-64) */}
+      <div className={`flex-1 min-h-screen flex flex-col w-full transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+        
+        {/* Header con posicionamiento dinámico de izquierda */}
+        <header className={`fixed top-0 right-0 left-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'}`}>
           <div className="flex-1">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -368,7 +371,6 @@ export default function AplicadorDePruebas() {
           <div className="flex items-center gap-4 text-[#123440]">
             <NotificadorTiempoReal />
             
-            {/* Botón de configuración con miniatura de Avatar */}
             <button
               onClick={() => setIsPerfilModalOpen(true)}
               className="flex items-center gap-2 p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-[#123440]"
@@ -392,12 +394,10 @@ export default function AplicadorDePruebas() {
         <ModalConfiguracionPerfil
           isOpen={isPerfilModalOpen}
           onClose={() => setIsPerfilModalOpen(false)}
-          onPerfilActualizado={() => {
-            // Recargar o actualizar el nombre en pantalla si es necesario
-          }}
+          onPerfilActualizado={() => {}}
         />
 
-        <main className="mt-16 p-8 flex-1">
+        <main className="mt-16 p-4 md:p-8 flex-1 w-full max-w-7xl mx-auto">
           <div className="space-y-8">
             <section className="mb-8 relative overflow-hidden rounded-3xl bg-[#123440] p-8 text-white min-h-[180px] flex items-center shadow-lg">
               <div className="relative z-10 max-w-xl">
