@@ -289,9 +289,6 @@ function DetalleCandidatoContent() {
     }
   };
 
-  // Importa también las funciones de verificación y generación de Cleaver arriba si las usas:
-  // import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
-
   const handleDescargarResultados = async () => {
     if (isGeneratingPDF) return;
     setIsGeneratingPDF(true);
@@ -307,7 +304,6 @@ function DetalleCandidatoContent() {
         return;
       }
 
-      // Variable base común para el candidato
       const datosCandidato = {
         full_name: candidato.full_name,
         paternal_surname: candidato.paternal_surname,
@@ -321,7 +317,6 @@ function DetalleCandidatoContent() {
 
       let pdfGenerado = false;
 
-      // Iteramos sobre las pruebas del candidato y ejecutamos el generador correspondiente de forma secuencial o unificada
       for (const prueba of pruebas) {
         if (esTestTerman(prueba)) {
           generarPDFHojaRespuestasTerman({
@@ -339,7 +334,7 @@ function DetalleCandidatoContent() {
             onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
           });
           pdfGenerado = true;
-        } else if (esTestRaven(prueba)) { // <--- Añade este bloque
+        } else if (esTestRaven(prueba)) {
           generarPDFHojaRespuestasRaven({
             candidato: datosCandidato,
             prueba: prueba,
@@ -406,16 +401,17 @@ function DetalleCandidatoContent() {
     : 50;
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-slate-800 font-sans flex">
+    <div className="min-h-screen bg-[#f8f9fa] text-slate-800 font-sans flex overflow-x-hidden">
       <SideNavBar
         title="Modulo Aplicador"
         role="aplicador"
         candidateId={candidateId ?? undefined}
       />
 
-      <div className="flex-1 ml-64 min-h-screen flex flex-col">
+      {/* Se ajusta con ml-0 en móviles y ml-64 en computadoras (md) */}
+      <div className="flex-1 ml-0 md:ml-64 min-h-screen flex flex-col w-full">
         {/* Main Content */}
-        <main className="px-8 py-6 flex-1">
+        <main className="px-4 md:px-8 py-6 flex-1">
           {/* Breadcrumb */}
           <div className="text-xs text-slate-500 flex items-center gap-1">
             <Link
