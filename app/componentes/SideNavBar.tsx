@@ -52,12 +52,6 @@ const navItems: NavItem[] = [
     label: 'Historial de pruebas',
     roles: ['aplicador'],
   },
-  {
-    href: '/dashboard/admin/agregar_usuarios/',
-    icon: Users,
-    label: 'Agregar nuevo usuario',
-    roles: ['admin'],
-  },
 ];
 
 interface SideNavBarProps {
