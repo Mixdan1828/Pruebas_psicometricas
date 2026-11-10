@@ -176,7 +176,6 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     }));
   };
 
-  // Validación de respuestas según el tipo y rango de la pregunta
   const checkIsAnswered = useCallback((qNum: number, ans: any) => {
     if (ans === undefined || ans === null || ans === '') return false;
     
@@ -491,17 +490,16 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 5. Serie V (76-87): Aritmética -> Permite números, diagonales (fracciones) y puntos decimales, bloqueando cualquier texto inválido o letras innecesarias */}
+                {/* 5. Serie V (76-87): Aritmética -> inputMode="text" para garantizar teclado completo con fracciones en móviles */}
                 {(qNum >= 76 && qNum <= 87) && (
                   <div className="space-y-2">
                     <input
                       type="text"
-                      inputMode="decimal"
+                      inputMode="text"
                       className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono text-lg"
                       placeholder="Escribe el resultado (ej. 25, 3.5, 1/2)..."
                       value={ans || ''}
                       onChange={(e) => {
-                        // Filtro permisivo para aceptar dígitos, puntos decimales, signos y barras diagonales (fracciones)
                         const val = e.target.value.replace(/[^0-9./\-]/g, '');
                         handleSelectAnswer(q.id, val);
                       }}
@@ -596,7 +594,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 9. Serie X (163-173): Secuencias numéricas / fracciones */}
+                {/* 9. Serie X (163-173): Secuencias numéricas / fracciones -> inputMode="text" para permitir diagonales */}
                 {(qNum >= 163 && qNum <= 173) && (() => {
                   const secuencia = 
                     content.secuencia || 
@@ -634,7 +632,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                       <div className="grid grid-cols-2 gap-4">
                         <input
                           type="text"
-                          inputMode="decimal"
+                          inputMode="text"
                           placeholder="Primer valor (ej. 1/2, 3.5)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num1 ?? ''}
@@ -645,7 +643,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                         />
                         <input
                           type="text"
-                          inputMode="decimal"
+                          inputMode="text"
                           placeholder="Segundo valor (ej. 3/4, 10.2)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num2 ?? ''}
