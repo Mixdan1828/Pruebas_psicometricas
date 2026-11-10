@@ -46,7 +46,7 @@ export default function Home() {
         </div>
 
         {/* MENÚ EN ESCRITORIO (Computadora) */}
-        <div className="hidden md:flex gap-10 text-slate-700 font-medium items-center text-sm">
+        <div className="hidden md:flex gap-8 text-slate-700 font-medium items-center text-sm">
           <button 
             type="button" 
             onClick={() => scrollToSection('mision-vision')} 
@@ -113,6 +113,13 @@ export default function Home() {
             >
               Acerca de nosotros
             </button>
+            <Link 
+              href="/preguntas-frecuentes"
+              onClick={() => setMenuAbierto(false)}
+              className="w-full text-center py-2 text-slate-200 hover:text-white active:bg-white/10 cursor-pointer"
+            >
+              Preguntas Frecuentes
+            </Link>
             <button 
               type="button" 
               onClick={() => scrollToSection('contacto-footer')} 
@@ -262,6 +269,85 @@ export default function Home() {
       </section>
 
       {/* ========================================================================= */}
+      {/* SECCIÓN: FUNCIONES AVANZADAS PARA EL SISTEMA PSICOMÉTRICO                 */}
+      {/* ========================================================================= */}
+      <section className="w-full bg-white py-20 px-6 md:px-16 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Columna Izquierda: Título y Descripción */}
+          <div className="lg:col-span-5 flex flex-col gap-6 text-left">
+            <span className="text-[#0E6433] font-bold text-xs uppercase tracking-widest block">
+              Optimización Institucional
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#123440] tracking-tight leading-tight">
+              Funciones avanzadas para optimizar la evaluación de personal
+            </h2>
+            <p className="text-slate-600 text-base md:text-lg leading-relaxed">
+              Realice evaluaciones psicométricas en línea de manera rápida y confiable, para el reclutamiento y selección del personal de la fundación.
+            </p>
+          </div>
+
+          {/* Columna Derecha: Cuadrícula de Tarjetas Personalizadas */}
+          <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            {/* Tarjeta 1: Fácil acceso para resolver las pruebas */}
+            <div className="bg-[#f4f7f6] border border-slate-200/80 rounded-3xl p-8 flex flex-col justify-between transition-all hover:shadow-md hover:border-[#9DBA3A]">
+              <div className="w-12 h-12 bg-[#123440]/10 text-[#123440] rounded-2xl flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-[#123440] text-lg mb-2">Fácil acceso para resolver</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Los candidatos pueden ingresar de forma sencilla mediante enlaces seguros generados por los aplicadores autorizados.
+                </p>
+              </div>
+            </div>
+
+            {/* Tarjeta 2: Disponibilidad 24/7 */}
+            <div className="bg-[#fcf7f2] border border-slate-200/80 rounded-3xl p-8 flex flex-col justify-between transition-all hover:shadow-md hover:border-[#9DBA3A]">
+              <div className="w-12 h-12 bg-[#9DBA3A]/20 text-[#123440] rounded-2xl flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-[#123440] text-lg mb-2">Disponibilidad 24/7</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Los candidatos pueden responder los exámenes psicométricos en cualquier horario y desde cualquier dispositivo adaptable.
+                </p>
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Sobre el Sistema y Gestión Interna */}
+            <div className="bg-[#f2f7f4] border border-slate-200/80 rounded-3xl p-8 flex flex-col justify-between transition-all hover:shadow-md hover:border-[#9DBA3A]">
+              <div className="w-12 h-12 bg-[#0E6433]/10 text-[#0E6433] rounded-2xl flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-[#123440] text-lg mb-2">Control del Sistema</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Plataforma exclusiva protegida por autenticación institucional de Google OAuth con supervisión y autorización de administradores.
+                </p>
+              </div>
+            </div>
+
+            {/* Tarjeta 4: Facilidad de uso y Reportes */}
+            <div className="bg-[#faf2f2] border border-slate-200/80 rounded-3xl p-8 flex flex-col justify-between transition-all hover:shadow-md hover:border-[#9DBA3A]">
+              <div className="w-12 h-12 bg-rose-500/10 text-rose-700 rounded-2xl flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-5-5-3 3"/></svg>
+              </div>
+              <div>
+                <h3 className="font-extrabold text-[#123440] text-lg mb-2">Facilidad de uso</h3>
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                  Los resultados y reportes detallados se generan de forma inmediata al momento en que cada candidato concluye sus evaluaciones.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
       {/* SECCIÓN: LLAMADO A LA ACCIÓN (CTA)                                        */}
       {/* ========================================================================= */}
       <section className="w-full bg-white px-6 md:px-16 py-16 max-w-7xl mx-auto">
@@ -318,15 +404,27 @@ export default function Home() {
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Recursos</h4>
               <ul className="flex flex-col gap-2 text-xs md:text-sm text-slate-300">
                 <li><a href="#" className="hover:text-[#9DBA3A] transition-colors">Donaciones</a></li>
-                <li><a href="#" className="hover:text-[#9DBA3A] transition-colors">Preguntas Frecuentes</a></li>
+                <li>
+                  <Link href="/preguntas-frecuentes" className="hover:text-[#9DBA3A] transition-colors">
+                    Preguntas Frecuentes
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div className="flex flex-col gap-3">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Legal</h4>
               <ul className="flex flex-col gap-2 text-xs md:text-sm text-slate-300">
-                <li><a href="#" className="hover:text-[#9DBA3A] transition-colors">Aviso de Privacidad</a></li>
-                <li><a href="#" className="hover:text-[#9DBA3A] transition-colors">Términos de Servicio</a></li>
+                <li>
+                  <Link href="/aviso-de-privacidad" className="hover:text-[#9DBA3A] transition-colors">
+                    Aviso de Privacidad
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terminos-de-servicio" className="hover:text-[#9DBA3A] transition-colors">
+                    Términos de Servicio
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
