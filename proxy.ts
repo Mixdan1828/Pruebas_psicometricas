@@ -6,7 +6,7 @@ import { getHomeRouteForRole } from '@/lib/utils/roles';
 const PROTECTED_PREFIXES = ['/dashboard'];
 
 // Rutas públicas que los candidatos usan para realizar las pruebas sin iniciar sesión
-const PUBLIC_EXCEPTIONS = ['/inicio_de_pruebas']; 
+const PUBLIC_EXCEPTIONS = ['/dashboard/inicio_de_pruebas']; 
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
