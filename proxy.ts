@@ -5,6 +5,10 @@ import { getHomeRouteForRole } from '@/lib/utils/roles';
 // Rutas que exigen sesión Y estado 'autorizado'
 const PROTECTED_PREFIXES = ['/dashboard'];
 
+// Rutas que comienzan con /dashboard pero son públicas para los candidatos
+const PUBLIC_DASHBOARD_EXCEPTIONS = ['/dashboard/iniciar_prueba']; 
+// (Si tu ruta tiene otro nombre, por ejemplo '/dashboard/examen', agrégala aquí también en el arreglo)
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -34,6 +38,14 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
+  // 1. SI LA RUTA ES PÚBLICA DEL EXAMEN, LA DEJAMOS PASAR DIRECTAMENTE SIN PEDIR LOGIN
+  const isPublicException = PUBLIC_DASHBOARD_EXCEPTIONS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+  if (isPublicException) {
+    return response;
+  }
+
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
@@ -56,7 +68,6 @@ export async function proxy(request: NextRequest) {
     .maybeSingle();
 
   // Solo los perfiles 'autorizado' pueden entrar a zonas protegidas.
-  // Un perfil nulo o con otro status se trata como 'pendiente'.
   const isAuthorized = profile?.status === 'autorizado';
 
   // 3. En la pantalla de espera, si ya fue autorizado, lo llevamos a su panel según su rol.
@@ -70,7 +81,6 @@ export async function proxy(request: NextRequest) {
   }
 
   // 4. Usuario YA autenticado y autorizado no debe quedarse en /login
-  //    (evita el loop de "login exitoso pero vuelve a /login" por cookie desfasada).
   if (pathname === '/login' && isAuthorized) {
     const url = request.nextUrl.clone();
     url.pathname = getHomeRouteForRole(profile?.role);
@@ -78,7 +88,6 @@ export async function proxy(request: NextRequest) {
   }
 
   // 5. El stub genérico /dashboard (y su barra final) no es una vista real:
-  //    lo resolvemos a la ruta de inicio según el rol del usuario.
   if ((pathname === '/dashboard' || pathname === '/dashboard/') && isAuthorized) {
     const url = request.nextUrl.clone();
     url.pathname = getHomeRouteForRole(profile?.role);
