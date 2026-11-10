@@ -262,16 +262,18 @@ export default function HistorialPruebas() {
   };
 
   return (
-    <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans">
+    <div className="bg-[#f9f9f7] text-slate-800 flex min-h-screen font-sans overflow-x-hidden">
       <SideNavBar 
         role="aplicador" 
         title="Portal Clínico" 
         onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)} 
       />
 
-      <div className="flex-1 ml-0 md:ml-64 min-h-screen flex flex-col w-full">
-        {/* Navbar */}
-        <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16">
+      {/* Contenedor principal adaptable según si el menú lateral está colapsado (w-20) o expandido (w-64) */}
+      <div className={`flex-1 min-h-screen flex flex-col w-full transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+        
+        {/* Navbar dinámico adaptado al ancho del sidebar */}
+        <header className={`fixed top-0 right-0 left-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'}`}>
           <div className="flex-1">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -316,8 +318,8 @@ export default function HistorialPruebas() {
           }}
         />
 
-        {/* Main */}
-        <main className="mt-16 p-8 flex-1">
+        {/* Main con ancho fluido total */}
+        <main className="mt-16 p-4 md:p-8 flex-1 w-full max-w-7xl mx-auto">
           <div className="space-y-8">
             <section className="mb-8">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

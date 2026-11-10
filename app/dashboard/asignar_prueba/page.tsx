@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import { createClient } from '@/lib/supabase/client';
 import { 
   Brain, UserSearch, TrendingUp, Activity, ClipboardList, Users, Link2, 
-  CheckCircle2, RefreshCw, Copy, Search, Eye, Trash2, Grid,ShieldAlert, Settings
+  CheckCircle2, RefreshCw, Copy, Search, Eye, Trash2, Grid, ShieldAlert, Settings
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import SideNavBar from '../../componentes/SideNavBar';
@@ -237,7 +237,7 @@ export default function AsignarPrueba() {
   );
 
   return (
-    <div className="bg-[#f9f9f7] text-[#202221] flex min-h-screen     font-sans overflow-x-hidden relative">
+    <div className="bg-[#f9f9f7] text-[#202221] flex min-h-screen font-sans overflow-x-hidden relative">
       <SideNavBar 
         role="aplicador" 
         title="Portal Clínico" 
@@ -251,8 +251,11 @@ export default function AsignarPrueba() {
         </div>
       )}
 
-      <div className="flex-1 ml-0 md:ml-64 min-h-screen flex flex-col w-full">
-        <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16">
+      {/* Contenedor principal adaptable según si el menú lateral está colapsado (w-20) o expandido (w-64) */}
+      <div className={`flex-1 min-h-screen flex flex-col w-full transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+        
+        {/* Header dinámico adaptado al ancho del sidebar */}
+        <header className={`fixed top-0 right-0 left-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm flex justify-between items-center px-4 md:px-8 h-16 transition-all duration-300 ${isSidebarCollapsed ? 'md:left-20' : 'md:left-64'}`}>
           <div className="relative w-64 hidden lg:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
@@ -296,7 +299,7 @@ export default function AsignarPrueba() {
           }}
         />
 
-        <main className="mt-16 p-8 flex-1 flex flex-col">
+        <main className="mt-16 p-4 md:p-8 flex-1 flex flex-col w-full max-w-7xl mx-auto">
           <section className="mb-8">
             <h1 className="text-3xl font-headline font-extrabold tracking-tight text-[#123440] mb-2">
               Asignación de Evaluaciones

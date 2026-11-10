@@ -486,14 +486,19 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 5. Serie V (76-87): Aritmética -> Guarda string (valor abierto) */}
+                {/* 5. Serie V (76-87): Aritmética -> Solo números, signos y puntos decimales (sin letras) */}
                 {(qNum >= 76 && qNum <= 87) && (
                   <input
                     type="text"
+                    inputMode="numeric"
                     className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none"
                     placeholder="Escribe el resultado numérico..."
                     value={ans || ''}
-                    onChange={(e) => handleSelectAnswer(q.id, e.target.value)}
+                    onChange={(e) => {
+                      // Filtra cualquier carácter que no sea número, signo menos/más o punto decimal
+                      const filteredValue = e.target.value.replace(/[^0-9.,\-+]/g, '');
+                      handleSelectAnswer(q.id, filteredValue);
+                    }}
                   />
                 )}
 

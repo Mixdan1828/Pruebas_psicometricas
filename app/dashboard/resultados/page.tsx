@@ -167,6 +167,9 @@ function DetalleCandidatoContent() {
   // Generación del PDF de resultados
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
 
+  // Estado para colapsar/expandir el SideNavBar
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
   useEffect(() => {
     async function cargarDatos() {
       if (!candidateId) {
@@ -406,12 +409,14 @@ function DetalleCandidatoContent() {
         title="Modulo Aplicador"
         role="aplicador"
         candidateId={candidateId ?? undefined}
+        onToggleCollapse={(collapsed) => setIsSidebarCollapsed(collapsed)}
       />
 
-      {/* Se ajusta con ml-0 en móviles y ml-64 en computadoras (md) */}
-      <div className="flex-1 ml-0 md:ml-64 min-h-screen flex flex-col w-full">
+      {/* Contenedor principal adaptable según si el menú lateral está colapsado (w-20) o expandido (w-64) */}
+      <div className={`flex-1 min-h-screen flex flex-col w-full transition-all duration-300 ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-64'}`}>
+        
         {/* Main Content */}
-        <main className="px-4 md:px-8 py-6 flex-1">
+        <main className="px-4 md:px-8 py-6 flex-1 w-full max-w-7xl mx-auto">
           {/* Breadcrumb */}
           <div className="text-xs text-slate-500 flex items-center gap-1">
             <Link
