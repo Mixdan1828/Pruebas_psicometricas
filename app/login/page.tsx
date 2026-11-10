@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Loader2, AlertCircle, CheckCircle2, Clock, X } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Clock, X, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -72,7 +73,7 @@ function LoginContent() {
 
   // Único método de autenticación: Google OAuth.
   // El intercambio del `code` por sesión ocurre en /auth/callback (lado servidor).
- const getURL = () => {
+  const getURL = () => {
     // Forzamos el uso estricto del dominio actual del cliente para evitar errores de concatenación con Vercel o Supabase
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     return `${origin}/auth/callback`;
@@ -100,7 +101,20 @@ function LoginContent() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans overflow-x-hidden relative">
 
       {/* ========================================================================= */}
-      {/* VENTANA EMERGENTE (MODAL)                                                */}
+      {/* BOTÓN REGRESAR AL ÍNDICE (Esquina Superior Izquierda)                      */}
+      {/* ========================================================================= */}
+      <div className="absolute top-6 left-6 z-10">
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-[#123440] transition-colors shadow-sm"
+        >
+          <ArrowLeft size={16} />
+          <span>Regresar al inicio</span>
+        </Link>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* VENTANA EMERGENTE (MODAL)                                                 */}
       {/* ========================================================================= */}
       {modal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
