@@ -12,15 +12,9 @@ export function VistaPreviaClaver({
   prueba,
   formatearFecha,
 }: VistaPreviaCleaverProps) {
-  // 1. Obtener las preguntas del test (para buscar su content_jsonb por ID)
+  // 1. Obtener todas las preguntas oficiales del test desde la base de datos
   const testObj = Array.isArray(prueba?.tests) ? prueba.tests[0] : prueba?.tests;
   const testQuestions = testObj?.test_questions || [];
-
-  // Crear un mapa rápido por ID de pregunta para búsqueda inmediata O(1)
-  const preguntasMap = new Map();
-  testQuestions.forEach((q: any) => {
-    preguntasMap.set(q.id, q);
-  });
 
   // 2. Obtener las respuestas registradas en candidates_results (answers_json)
   const respuestasJson = (prueba?.answers_json || {}) as Record<
@@ -28,13 +22,16 @@ export function VistaPreviaClaver({
     { mas?: string; menos?: string }
   >;
 
-  // 3. Convertir a array y ordenar estrictamente por el campo "grupo"
-  const bloquesEntradas = Object.entries(respuestasJson).sort(([idA], [idB]) => {
-    const pregA = preguntasMap.get(idA);
-    const pregB = preguntasMap.get(idB);
-    
-    const jsonA = pregA ? (typeof pregA.content_jsonb === "string" ? JSON.parse(pregA.content_jsonb || "{}") : pregA.content_jsonb || {}) : {};
-    const jsonB = pregB ? (typeof pregB.content_jsonb === "string" ? JSON.parse(pregB.content_jsonb || "{}") : pregB.content_jsonb || {}) : {};
+  // 3. Procesar y ordenar todas las preguntas basándonos estrictamente en el campo "grupo" de su content_jsonb
+  const bloquesOrdenados = [...testQuestions].sort((qA: any, qB: any) => {
+    const jsonA =
+      typeof qA.content_jsonb === "string"
+        ? JSON.parse(qA.content_jsonb || "{}")
+        : qA.content_jsonb || {};
+    const jsonB =
+      typeof qB.content_jsonb === "string"
+        ? JSON.parse(qB.content_jsonb || "{}")
+        : qB.content_jsonb || {};
 
     const grupoA = Number(jsonA.grupo) || 0;
     const grupoB = Number(jsonB.grupo) || 0;
@@ -44,8 +41,6 @@ export function VistaPreviaClaver({
 
   return (
     <div>
-      
-
       <h5 className="text-center font-bold text-sm text-[#0d313f] uppercase mb-4 pb-2">
         Test Cleaver - Hoja de Respuesta
       </h5>
@@ -106,30 +101,31 @@ export function VistaPreviaClaver({
             Detalle de Reactivos Seleccionados
           </h6>
           <span className="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-full border">
-            Total de bloques: {bloquesEntradas.length}
+            Total de bloques: {bloquesOrdenados.length}
           </span>
         </div>
 
         {/* Listado de tablas (2 columnas en pantallas medianas) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto p-2">
-          {bloquesEntradas.map(([idBloque, seleccion], idx) => {
-            const preguntaEncontrada = preguntasMap.get(idBloque);
-            
-            const contenidoJson = preguntaEncontrada
-              ? typeof preguntaEncontrada.content_jsonb === "string"
-                ? JSON.parse(preguntaEncontrada.content_jsonb || "{}")
-                : preguntaEncontrada.content_jsonb || {}
-              : {};
+          {bloquesOrdenados.map((pregunta: any, idx: number) => {
+            const idPregunta = pregunta.id;
+
+            const contenidoJson =
+              typeof pregunta.content_jsonb === "string"
+                ? JSON.parse(pregunta.content_jsonb || "{}")
+                : pregunta.content_jsonb || {};
 
             const palabrasBloque: string[] = contenidoJson.palabras || [];
-            const grupoBloque = contenidoJson.grupo || (idx + 1);
+            const grupoBloque = contenidoJson.grupo || idx + 1;
 
+            // Buscamos la respuesta del usuario para esta pregunta utilizando su ID de pregunta
+            const seleccion = respuestasJson[idPregunta] || {};
             const palabraMas = seleccion?.mas;
             const palabraMenos = seleccion?.menos;
 
             return (
               <div
-                key={idBloque}
+                key={idPregunta || idx}
                 className="border-2 border-black rounded-lg overflow-hidden bg-white shadow-sm mb-4"
               >
                 {/* Cabecera del bloque */}
@@ -149,9 +145,6 @@ export function VistaPreviaClaver({
                       <th className="py-2 px-2 text-center w-1/5 text-rose-700">
                         -
                       </th>
-                    </tr>
-                    <tr className="bg-slate-100 border-b-2 border-black">
-                      
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">

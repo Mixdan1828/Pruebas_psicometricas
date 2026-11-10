@@ -42,7 +42,7 @@ const SERIES_DEFINITIONS = [
     start: 76, 
     end: 87, 
     timeMinutes: 5, 
-    instruction: "Resuelva mentalmente o mediante operaciones el problema matemático planteado y escriba la respuesta numérica correcta." 
+    instruction: "Resuelva mentalmente o mediante operaciones el problema matemático planteado y escriba la respuesta numérica correcta (puede usar números enteros, decimales o fracciones como 1/2)." 
   },
   { 
     title: "Serie VI: Juicio Práctico", 
@@ -183,6 +183,11 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
     // Serie IV (58-75): Debe seleccionar exactamente 2 letras (a,b,c,d,e)
     if (qNum >= 58 && qNum <= 75) {
       return Array.isArray(ans) && ans.length === 2;
+    }
+    
+    // Serie V (76-87): Aritmética -> Validar que contenga texto válido y no esté vacío
+    if (qNum >= 76 && qNum <= 87) {
+      return String(ans).trim().length > 0;
     }
     
     // Serie VIII (128-144): Debe tener seleccionado V ('v') o F ('f')
@@ -351,7 +356,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 {(((qNum >= 1 && qNum <= 16) || (qNum >= 108 && qNum <= 127))) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd'
+                      const letter = String.fromCharCode(97 + opIndex);
                       const label = formatOptionText(op);
                       const isSelected = ans === letter;
 
@@ -380,7 +385,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 {((qNum >= 17 && qNum <= 27)) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c'
+                      const letter = String.fromCharCode(97 + opIndex);
                       const label = formatOptionText(op);
                       const isSelected = ans === letter;
 
@@ -448,7 +453,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 {(qNum >= 58 && qNum <= 75) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd', 'e'
+                      const letter = String.fromCharCode(97 + opIndex);
                       const label = formatOptionText(op);
                       const currentSelected: string[] = Array.isArray(ans) ? ans : [];
                       const isChecked = currentSelected.includes(letter);
@@ -486,20 +491,25 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 5. Serie V (76-87): Aritmética -> Solo números, signos y puntos decimales (sin letras) */}
+                {/* 5. Serie V (76-87): Aritmética -> Permite números, diagonales (fracciones) y puntos decimales, bloqueando cualquier texto inválido o letras innecesarias */}
                 {(qNum >= 76 && qNum <= 87) && (
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none"
-                    placeholder="Escribe el resultado numérico..."
-                    value={ans || ''}
-                    onChange={(e) => {
-                      // Filtra cualquier carácter que no sea número, signo menos/más o punto decimal
-                      const filteredValue = e.target.value.replace(/[^0-9.,\-+]/g, '');
-                      handleSelectAnswer(q.id, filteredValue);
-                    }}
-                  />
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono text-lg"
+                      placeholder="Escribe el resultado (ej. 25, 3.5, 1/2)..."
+                      value={ans || ''}
+                      onChange={(e) => {
+                        // Filtro permisivo para aceptar dígitos, puntos decimales, signos y barras diagonales (fracciones)
+                        const val = e.target.value.replace(/[^0-9./\-]/g, '');
+                        handleSelectAnswer(q.id, val);
+                      }}
+                    />
+                    <p className="text-xs text-slate-400 font-medium">
+                      * Puede ingresar números enteros, decimales o fracciones utilizando la barra (ej: <span className="font-mono">1/2</span>).
+                    </p>
+                  </div>
                 )}
 
                 {/* 6. Serie VI (88-107): Juicio Práctico -> Guarda palabras "si" o "no" */}
@@ -523,7 +533,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 7. Serie VIII (128-144): Ordenar oración eliminando el input de texto, guardando únicamente 'v' o 'f' */}
+                {/* 7. Serie VIII (128-144): Ordenar oración guardando únicamente 'v' o 'f' */}
                 {(qNum >= 128 && qNum <= 144) && (() => {
                   const rawOracion = content.oracion_desordenada || content.oracion || "";
                   const oracionTexto = typeof rawOracion === 'string' ? rawOracion : formatOptionText(rawOracion);
@@ -561,7 +571,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                 {(qNum >= 145 && qNum <= 162) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {opciones.map((op: any, opIndex: number) => {
-                      const letter = String.fromCharCode(97 + opIndex); // 'a', 'b', 'c', 'd', 'e'
+                      const letter = String.fromCharCode(97 + opIndex);
                       const label = formatOptionText(op);
                       const isSelected = ans === letter;
 
@@ -586,7 +596,7 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                   </div>
                 )}
 
-                {/* 9. Serie X (163-173): Secuencias numéricas / fracciones (inputs de texto abiertos que permiten números, diagonales '/' y puntos decimales '.') */}
+                {/* 9. Serie X (163-173): Secuencias numéricas / fracciones */}
                 {(qNum >= 163 && qNum <= 173) && (() => {
                   const secuencia = 
                     content.secuencia || 
@@ -624,17 +634,25 @@ export default function TermanView({ testData, onComplete }: TermanViewProps) {
                       <div className="grid grid-cols-2 gap-4">
                         <input
                           type="text"
+                          inputMode="decimal"
                           placeholder="Primer valor (ej. 1/2, 3.5)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num1 ?? ''}
-                          onChange={(e) => handleSelectAnswer(q.id, { ...currentObj, num1: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9./\-]/g, '');
+                            handleSelectAnswer(q.id, { ...currentObj, num1: val });
+                          }}
                         />
                         <input
                           type="text"
+                          inputMode="decimal"
                           placeholder="Segundo valor (ej. 3/4, 10.2)"
                           className="w-full border-2 border-slate-200 rounded-xl p-3 bg-slate-50 focus:bg-white focus:border-[#416912] focus:outline-none font-mono font-bold text-center"
                           value={currentObj.num2 ?? ''}
-                          onChange={(e) => handleSelectAnswer(q.id, { ...currentObj, num2: e.target.value })}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9./\-]/g, '');
+                            handleSelectAnswer(q.id, { ...currentObj, num2: val });
+                          }}
                         />
                       </div>
                     </div>
