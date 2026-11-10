@@ -30,61 +30,61 @@ export default function UserManagementDashboard() {
   ];
 
   return (
-    <div className="bg-[#fcf9f8] text-[#1c1b1c] font-sans min-h-screen flex antialiased">
+    <div className="bg-[#fcf9f8] text-[#1c1b1c] font-sans min-h-screen flex antialiased overflow-x-hidden">
       
       <SideNavBar role="admin" title="Panel Clínico" />
 
-      {/* Main Content Canvas */}
-      <main className="ml-64 flex-grow min-h-screen flex flex-col">
+      {/* Main Content Canvas con ajuste responsivo de margen izquierdo */}
+      <main className="ml-0 md:ml-64 flex-grow min-h-screen flex flex-col w-full">
         
-        {/* TopAppBar */}
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg shadow-sm flex justify-between items-center w-full px-8 py-4 border-b border-slate-100">
+        {/* TopAppBar con ancho completo adaptado */}
+        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg shadow-sm flex justify-between items-center w-full px-4 md:px-8 py-4 border-b border-slate-100">
           <div className="flex items-center gap-4">
-            <h2 className="font-headline font-bold text-lg text-cyan-950 tracking-tight">Panel de Control General</h2>
+            <h2 className="font-headline font-bold text-base md:text-lg text-cyan-950 tracking-tight">Panel de Control General</h2>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="relative">
+          <div className="flex items-center gap-4 md:gap-6">
+            <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
-                className="bg-neutral-50 border-none rounded-full py-2 pl-10 pr-4 w-64 text-xs focus:ring-2 focus:ring-lime-600/20 transition-all outline-none" 
+                className="bg-neutral-50 border-none rounded-full py-2 pl-10 pr-4 w-48 md:w-64 text-xs focus:ring-2 focus:ring-lime-600/20 transition-all outline-none" 
                 placeholder="Buscar personal o folios..." 
                 type="text" 
               />
             </div>
             
-            <div className="flex items-center gap-4 border-l border-neutral-100 pl-6">
+            <div className="flex items-center gap-3 md:gap-4 border-l border-neutral-100 pl-4 md:pl-6">
               <button className="text-slate-600 hover:text-[#0E6433] transition-colors">
                 <Bell size={18} />
               </button>
               <button className="text-slate-600 hover:text-[#0E6433] transition-colors">
                 <Settings size={18} />
               </button>
-              <div className="h-9 w-9 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white ring-offset-2 ring-offset-neutral-100 shadow-sm">
-                <div className="w-full h-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-600">Admin</div>
+              <div className="h-8 w-8 md:h-9 md:w-9 rounded-full bg-slate-200 overflow-hidden ring-2 ring-white ring-offset-2 ring-offset-neutral-100 shadow-sm">
+                <div className="w-full h-full bg-slate-300 flex items-center justify-center text-[10px] md:text-xs font-bold text-slate-600">Admin</div>
               </div>
             </div>
           </div>
         </header>
 
         {/* Dashboard Content */}
-        <section className="p-8 flex-grow">
+        <section className="p-4 md:p-8 flex-grow">
           
           {/* Header Section with Stats */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
             <div>
               <span className="text-lime-700 font-bold tracking-widest text-xs uppercase mb-1 block">Administración del Sistema</span>
-              <h1 className="text-3xl font-headline font-extrabold text-cyan-950 tracking-tight">Control de Usuarios</h1>
+              <h1 className="text-2xl md:text-3xl font-headline font-extrabold text-cyan-950 tracking-tight">Control de Usuarios</h1>
               <p className="text-slate-500 text-xs mt-1 max-w-lg">Administra los niveles de acceso, perfiles y permisos de seguridad del personal clínico y psicólogos evaluadores.</p>
             </div>
-            <button className="bg-gradient-to-r from-[#0E6433] to-[#69943A] text-white px-6 py-3.5 rounded-full text-xs font-bold shadow-xl shadow-lime-900/10 hover:shadow-lime-900/20 transition-all flex items-center gap-2">
+            <button className="bg-gradient-to-r from-[#0E6433] to-[#69943A] text-white px-6 py-3.5 rounded-full text-xs font-bold shadow-xl shadow-lime-900/10 hover:shadow-lime-900/20 transition-all flex items-center justify-center gap-2">
               <UserPlus size={16} />
               <span>Alta de Nuevo Usuario</span>
             </button>
           </div>
 
           {/* Bento Grid Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-100">
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1">Personal Total</p>
               <p className="text-2xl font-headline font-extrabold text-cyan-950">142</p>
@@ -119,7 +119,7 @@ export default function UserManagementDashboard() {
           <div className="bg-neutral-100 rounded-2xl p-0.5 overflow-hidden shadow-sm">
             <div className="bg-white rounded-xl">
               <div className="px-6 py-4 border-b border-neutral-100 flex justify-between items-center flex-wrap gap-4">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <button 
                     onClick={() => setActiveTab('all')}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'all' ? 'bg-neutral-900 text-white' : 'text-slate-500 hover:bg-neutral-50'}`}
@@ -146,7 +146,7 @@ export default function UserManagementDashboard() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[650px]">
                   <thead>
                     <tr className="text-slate-400 text-[10px] uppercase tracking-widest font-bold border-b border-neutral-50">
                       <th className="px-6 py-3">Detalle del Usuario</th>
@@ -205,7 +205,7 @@ export default function UserManagementDashboard() {
               </div>
 
               {/* Paginador */}
-              <div className="px-6 py-3 border-t border-neutral-50 bg-neutral-50/20 flex justify-between items-center text-[11px] text-slate-500 font-medium">
+              <div className="px-6 py-3 border-t border-neutral-50 bg-neutral-50/20 flex justify-between items-center text-[11px] text-slate-500 font-medium flex-wrap gap-2">
                 <p>Mostrando 4 de 142 integrantes</p>
                 <div className="flex gap-1">
                   <button className="h-7 w-7 flex items-center justify-center rounded border border-neutral-200 bg-white text-slate-400 hover:bg-neutral-50">

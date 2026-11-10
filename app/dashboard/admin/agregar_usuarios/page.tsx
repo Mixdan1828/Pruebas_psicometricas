@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { 
+import {  
   Users,
   Activity,
   History,
@@ -68,16 +68,16 @@ const initialUsers: User[] = [
 
 export default function GestionUsuarios() {
   return (
-    <div className="bg-[#fcf9f8] text-[#1c1b1c] font-sans min-h-screen flex antialiased selection:bg-lime-500/30">
+    <div className="bg-[#fcf9f8] text-[#1c1b1c] font-sans min-h-screen flex antialiased selection:bg-lime-500/30 overflow-x-hidden">
       
       <SideNavBar title="Panel de Administración" role="admin" />
 
-      {/* Main Content Wrapper */}
-      <main className="pl-72 min-h-screen flex flex-col w-full">
+      {/* Main Content Wrapper con ajuste responsivo */}
+      <main className="pl-0 md:pl-72 min-h-screen flex flex-col w-full">
         
         {/* TopNavBar Component */}
-        <header className="flex justify-between items-center w-full px-8 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
-          <div className="flex-1 max-w-md">
+        <header className="flex justify-between items-center w-full px-4 md:px-8 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100">
+          <div className="flex-1 max-w-md hidden sm:block">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input 
@@ -88,8 +88,8 @@ export default function GestionUsuarios() {
             </div>
           </div>
           
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 text-slate-500">
+          <div className="flex items-center gap-4 md:gap-6 ml-auto">
+            <div className="flex items-center gap-2 md:gap-4 text-slate-500">
               <button className="hover:text-lime-600 transition-all p-1.5 hover:bg-slate-50 rounded-full">
                 <Bell size={18} />
               </button>
@@ -101,7 +101,7 @@ export default function GestionUsuarios() {
             <div className="flex items-center gap-3">
               <img 
                 alt="Administrator Profile" 
-                className="h-10 w-10 rounded-full object-cover border-2 border-lime-500/20" 
+                className="h-9 w-9 md:h-10 md:w-10 rounded-full object-cover border-2 border-lime-500/20" 
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_FLr1ik57d81zLTSRjjfxSQ3Q9rvrn0UIOWrfhnSI097PhJNFXpma8Hy-vFdcNkmU_4L1SHXWSPWWsQDIunymrh0Bgxccykh9IMFU9esOxAfj2GnQ6tvEb7NOxgesNvYpBFMd7DdFM7Spo_cQoInWB59GshysU4bmJCyCPoD2x98Yb3QoTUMpqlJV6PQ3tnbNpG9Ese2Zzo9MtrSZJ98V3FlRBBO6VSU_rFHoay6Vvh_y6ZxuGn9O-fIDXJSV7PMnFECNAvl03r8" 
               />
             </div>
@@ -109,13 +109,13 @@ export default function GestionUsuarios() {
         </header>
 
         {/* Page Canvas Content */}
-        <div className="p-8 max-w-7xl mx-auto w-full space-y-8 flex-grow">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8 flex-grow">
           
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div className="space-y-1">
-              <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Gestión de Usuarios</h1>
-              <p className="text-slate-500 max-w-2xl text-sm">
+              <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900">Gestión de Usuarios</h1>
+              <p className="text-slate-500 max-w-2xl text-xs md:text-sm">
                 Administra el acceso del personal médico, administrativo y técnico a la plataforma de la fundación.
               </p>
             </div>
@@ -126,10 +126,10 @@ export default function GestionUsuarios() {
           </div>
 
           {/* Summary Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
             
             {/* Card 1 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
+            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-slate-100 rounded-lg text-slate-600 group-hover:bg-lime-100 group-hover:text-lime-700 transition-colors">
                   <Users size={20} />
@@ -141,7 +141,7 @@ export default function GestionUsuarios() {
             </div>
 
             {/* Card 2 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
+            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-slate-100 rounded-lg text-slate-600 group-hover:bg-lime-100 group-hover:text-lime-700 transition-colors">
                   <Activity size={20} />
@@ -152,7 +152,7 @@ export default function GestionUsuarios() {
             </div>
 
             {/* Card 3 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
+            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-slate-100 rounded-lg text-slate-600 group-hover:bg-lime-100 group-hover:text-lime-700 transition-colors">
                   <ShieldCheck size={20} />
@@ -163,7 +163,7 @@ export default function GestionUsuarios() {
             </div>
 
             {/* Card 4 */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
+            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border-b-2 border-transparent hover:border-lime-500 transition-all group">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-slate-100 rounded-lg text-slate-600 group-hover:bg-lime-100 group-hover:text-lime-700 transition-colors">
                   <History size={20} />
@@ -177,20 +177,20 @@ export default function GestionUsuarios() {
           {/* Main Table Section */}
           <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-neutral-100">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead className="bg-[#f6f3f2]">
                   <tr>
-                    <th className="px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Nombre del Usuario</th>
-                    <th className="px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Correo Electrónico</th>
-                    <th className="px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Rol Actual</th>
-                    <th className="px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Última Conexión</th>
-                    <th className="px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider text-right">Acciones</th>
+                    <th className="px-6 md:px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Nombre del Usuario</th>
+                    <th className="px-6 md:px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Correo Electrónico</th>
+                    <th className="px-6 md:px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Rol Actual</th>
+                    <th className="px-6 md:px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider">Última Conexión</th>
+                    <th className="px-6 md:px-8 py-5 text-sm font-semibold text-slate-600 uppercase tracking-wider text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {initialUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
-                      <td className="px-8 py-5">
+                      <td className="px-6 md:px-8 py-5">
                         <div className="flex items-center gap-3">
                           <img 
                             className="h-10 w-10 rounded-full object-cover bg-slate-100" 
@@ -203,8 +203,8 @@ export default function GestionUsuarios() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-slate-600 text-sm font-medium font-mono">{user.email}</td>
-                      <td className="px-8 py-5">
+                      <td className="px-6 md:px-8 py-5 text-slate-600 text-sm font-medium font-mono">{user.email}</td>
+                      <td className="px-6 md:px-8 py-5">
                         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold cursor-pointer transition-colors ${
                           user.role === 'Doctor' ? 'bg-lime-50 text-lime-700 hover:bg-lime-100' :
                           user.role === 'Administrador' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' :
@@ -214,7 +214,7 @@ export default function GestionUsuarios() {
                           <ChevronDown size={14} />
                         </div>
                       </td>
-                      <td className="px-8 py-5">
+                      <td className="px-6 md:px-8 py-5">
                         {user.isActiveNow ? (
                           <div className="flex items-center gap-2 text-sm text-slate-900 font-semibold">
                             <span className="h-2 w-2 rounded-full bg-lime-500 animate-pulse"></span>
@@ -227,7 +227,7 @@ export default function GestionUsuarios() {
                           </div>
                         )}
                       </td>
-                      <td className="px-8 py-5 text-right">
+                      <td className="px-6 md:px-8 py-5 text-right">
                         <button className="text-slate-300 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50" title="Eliminar Acceso">
                           <Trash2 size={16} />
                         </button>
@@ -239,7 +239,7 @@ export default function GestionUsuarios() {
             </div>
 
             {/* Pagination Component */}
-            <div className="p-6 bg-[#f6f3f2] border-t border-slate-100 flex justify-between items-center">
+            <div className="p-4 md:p-6 bg-[#f6f3f2] border-t border-slate-100 flex justify-between items-center flex-wrap gap-2">
               <p className="text-xs text-slate-500 font-medium">Mostrando 4 de 124 usuarios</p>
               <div className="flex gap-2">
                 <button className="p-2 rounded-lg border border-slate-200 bg-white shadow-sm text-slate-400 disabled:opacity-50" disabled>
@@ -255,9 +255,9 @@ export default function GestionUsuarios() {
           </div>
 
           {/* Footer Card / Role Guide */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-[#123440] rounded-3xl p-8 text-white relative overflow-hidden shadow-lg shadow-slate-900/5">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center bg-[#123440] rounded-3xl p-6 md:p-8 text-white relative overflow-hidden shadow-lg shadow-slate-900/5">
             <div className="md:col-span-2 space-y-4 relative z-10">
-              <h2 className="text-3xl font-bold tracking-tight">Guía de Roles y Permisos</h2>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Guía de Roles y Permisos</h2>
               <p className="text-slate-300 text-sm leading-relaxed max-w-xl">
                 Asegúrese de asignar los niveles de acceso correctos para mantener la integridad de los datos médicos. Los roles definen qué acciones puede realizar cada usuario dentro de la base de datos de pacientes y resultados.
               </p>
