@@ -5,9 +5,8 @@ import { getHomeRouteForRole } from '@/lib/utils/roles';
 // Rutas que exigen sesión Y estado 'autorizado'
 const PROTECTED_PREFIXES = ['/dashboard'];
 
-// Rutas que comienzan con /dashboard pero son públicas para los candidatos
-const PUBLIC_DASHBOARD_EXCEPTIONS = ['/dashboard/iniciar_prueba']; 
-// (Si tu ruta tiene otro nombre, por ejemplo '/dashboard/examen', agrégala aquí también en el arreglo)
+// Rutas públicas que los candidatos usan para realizar las pruebas sin iniciar sesión
+const PUBLIC_EXCEPTIONS = ['/inicio_de_pruebas']; 
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
@@ -38,8 +37,8 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  // 1. SI LA RUTA ES PÚBLICA DEL EXAMEN, LA DEJAMOS PASAR DIRECTAMENTE SIN PEDIR LOGIN
-  const isPublicException = PUBLIC_DASHBOARD_EXCEPTIONS.some(
+  // 1. SI LA RUTA ES PÚBLICA DE EXAMEN, LA DEJAMOS PASAR DIRECTAMENTE SIN PEDIR LOGIN
+  const isPublicException = PUBLIC_EXCEPTIONS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
   if (isPublicException) {
