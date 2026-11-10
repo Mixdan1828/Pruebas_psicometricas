@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, UserPlus, FileText, FileCheck } from 'lucide-react';
+import { Bell, UserPlus, FileCheck, Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const supabase = createClient();
@@ -13,7 +13,7 @@ interface NotificacionItem {
   mensaje: string;
   urlDestino: string;
   fecha?: string;
-  tipo: 'registro' | 'test_pendiente' | 'test_completado';
+  tipo: 'registro' | 'test_iniciado' | 'test_completado';
 }
 
 export default function NotificadorTiempoReal() {
@@ -26,7 +26,7 @@ export default function NotificadorTiempoReal() {
   useEffect(() => {
     let isMounted = true;
     let profilesChannel: any;
-    let testsChannel: any;
+    let resultsChannel: any;
 
     const inicializarSistema = async () => {
       try {
@@ -67,7 +67,7 @@ export default function NotificadorTiempoReal() {
         const notifsIniciales: NotificacionItem[] = [];
 
         // ==========================================
-        // FLUJO PARA ADMINISTRADOR: Nuevos Registros (Globales)
+        // FLUJO PARA ADMINISTRADOR: Nuevos Registros
         // ==========================================
         if (rol === 'admin') {
           const { data: perfilesRecientes, error: errorPerfiles } = await supabase
@@ -122,52 +122,57 @@ export default function NotificadorTiempoReal() {
         }
 
         // ==========================================
-        // FLUJO PARA APLICADOR: Tests (Pendientes y Completados)
-        // Relacionando 'candidate_results' con 'candidates' y 'tests'
+        // FLUJO PARA APLICADOR: Tests Iniciados y Completados
         // ==========================================
         if (rol === 'aplicador') {
-          const { data: testsRecientes, error: errorTests } = await supabase
+          // Consultar candidate_results uniendo con candidates y tests
+          const { data: resultadosRecientes, error: errorResultados } = await supabase
             .from('candidate_results')
             .select(`
               id,
               status,
-              created_at,
               updated_at,
+              created_at,
               user_id,
-              candidate:candidate_id (full_name),
-              test:test_id (name)
+              candidates (full_name, paternal_surname, maternal_surname),
+              tests (name)
             `)
             .eq('user_id', user.id)
+            .in('status', ['en_proceso', 'completo'])
             .order('updated_at', { ascending: false })
-            .limit(30);
+            .limit(25);
 
-          if (!errorTests && testsRecientes) {
-            testsRecientes.forEach((item: any) => {
-              const candidatoNombre = item.candidate?.full_name || 'Candidato';
-              const testNombre = item.test?.name || 'Evaluación Psicométrica';
-              const estatus = item.status; // 'pendiente' o 'completado'
+          if (!errorResultados && resultadosRecientes) {
+            resultadosRecientes.forEach((item: any) => {
+              const candidatoObj = item.candidates;
+              const nombreCandidato = candidatoObj 
+                ? [candidatoObj.full_name, candidatoObj.paternal_surname, candidatoObj.maternal_surname].filter(Boolean).join(' ')
+                : 'Candidato';
 
-              if (estatus === 'pendiente') {
-                const idNotif = `test-pend-${item.id}`;
+              const nombreTest = item.tests?.name || 'Evaluación Psicométrica';
+              const timestamp = item.updated_at || item.created_at;
+
+              if (item.status === 'en_proceso') {
+                const idNotif = `test-proc-${item.id}`;
                 if (!idsDescartados.has(idNotif)) {
                   notifsIniciales.push({
                     id: idNotif,
-                    titulo: 'Test Iniciado / Pendiente',
-                    mensaje: `El candidato ${candidatoNombre} ha iniciado la evaluación: ${testNombre}.`,
+                    titulo: 'Test Iniciado',
+                    mensaje: `El candidato ${nombreCandidato} ha comenzado la evaluación: ${nombreTest}.`,
                     urlDestino: `/dashboard/aplicador_de_pruebas`,
-                    fecha: item.created_at,
-                    tipo: 'test_pendiente'
+                    fecha: timestamp,
+                    tipo: 'test_iniciado'
                   });
                 }
-              } else if (estatus === 'completado') {
+              } else if (item.status === 'completo') {
                 const idNotif = `test-comp-${item.id}`;
                 if (!idsDescartados.has(idNotif)) {
                   notifsIniciales.push({
                     id: idNotif,
                     titulo: 'Test Completado',
-                    mensaje: `El candidato ${candidatoNombre} ha finalizado la evaluación: ${testNombre}.`,
+                    mensaje: `El candidato ${nombreCandidato} ha finalizado la evaluación: ${nombreTest}.`,
                     urlDestino: `/dashboard/aplicador_de_pruebas`,
-                    fecha: item.updated_at || item.created_at,
+                    fecha: timestamp,
                     tipo: 'test_completado'
                   });
                 }
@@ -175,68 +180,51 @@ export default function NotificadorTiempoReal() {
             });
           }
 
-          // Suscripción en tiempo real para cambios en 'candidate_results' del aplicador
-          testsChannel = supabase
-            .channel(`realtime_aplicador_candidate_results_${user.id}`)
+          // Suscripción en tiempo real a candidate_results para este aplicador
+          resultsChannel = supabase
+            .channel(`realtime_aplicador_results_${user.id}`)
             .on(
               'postgres_changes',
               { 
-                event: '*', // Escucha INSERT y UPDATE para detectar cambios de estatus
+                event: '*', // Escucha INSERT y UPDATE para detectar cambios de estado
                 schema: 'public', 
                 table: 'candidate_results',
                 filter: `user_id=eq.${user.id!}`
               },
               async (payload) => {
-                const record = payload.new as any;
-                if (!record) return;
+                const nuevoReg = payload.new as any;
+                if (!nuevoReg || !['en_proceso', 'completo'].includes(nuevoReg.status)) return;
 
-                // Consultar los datos relacionados (candidate y test) para el payload en tiempo real
-                const { data: relData } = await supabase
-                  .from('candidate_results')
-                  .select(`
-                    candidate:candidate_id (full_name),
-                    test:test_id (name)
-                  `)
-                  .eq('id', record.id)
-                  .single();
+                // Consultar nombre del candidato y de la prueba para enriquecer el mensaje en tiempo real
+                const [{ data: candData }, { data: testData }] = await Promise.all([
+                  supabase.from('candidates').select('full_name, paternal_surname, maternal_surname').eq('id', nuevoReg.candidate_id).maybeSingle(),
+                  supabase.from('tests').select('name').eq('id', nuevoReg.test_id).maybeSingle()
+                ]);
 
-                const candidatoNombre = (relData as any)?.candidate?.full_name || 'Candidato';
-                const testNombre = (relData as any)?.test?.name || 'Evaluación Psicométrica';
-                const estatus = record.status;
+                const nombreCandidato = candData 
+                  ? [candData.full_name, candData.paternal_surname, candData.maternal_surname].filter(Boolean).join(' ')
+                  : 'Candidato';
+                const nombreTest = testData?.name || 'Evaluación Psicométrica';
 
-                if (estatus === 'pendiente') {
-                  const idNotif = `test-pend-${record.id}`;
-                  const nuevaNotif: NotificacionItem = {
-                    id: idNotif,
-                    titulo: 'Test Iniciado / Pendiente',
-                    mensaje: `El candidato ${candidatoNombre} ha iniciado la evaluación: ${testNombre}.`,
-                    urlDestino: `/dashboard/aplicador_de_pruebas`,
-                    fecha: record.created_at || new Date().toISOString(),
-                    tipo: 'test_pendiente'
-                  };
+                const esProceso = nuevoReg.status === 'en_proceso';
+                const idNotif = esProceso ? `test-proc-${nuevoReg.id}` : `test-comp-${nuevoReg.id}`;
+                
+                const nuevaNotif: NotificacionItem = {
+                  id: idNotif,
+                  titulo: esProceso ? 'Test Iniciado' : 'Test Completado',
+                  mensaje: esProceso 
+                    ? `El candidato ${nombreCandidato} ha comenzado la evaluación: ${nombreTest}.`
+                    : `El candidato ${nombreCandidato} ha finalizado la evaluación: ${nombreTest}.`,
+                  urlDestino: `/dashboard/aplicador_de_pruebas`,
+                  fecha: nuevoReg.updated_at || nuevoReg.created_at || new Date().toISOString(),
+                  tipo: esProceso ? 'test_iniciado' : 'test_completado'
+                };
 
-                  setListaNotificaciones((prev) => {
-                    if (prev.some((n) => n.id === nuevaNotif.id)) return prev;
-                    return [nuevaNotif, ...prev];
-                  });
-                } else if (estatus === 'completado') {
-                  const idNotif = `test-comp-${record.id}`;
-                  const nuevaNotif: NotificacionItem = {
-                    id: idNotif,
-                    titulo: 'Test Completado',
-                    mensaje: `El candidato ${candidatoNombre} ha finalizado la evaluación: ${testNombre}.`,
-                    urlDestino: `/dashboard/aplicador_de_pruebas`,
-                    fecha: record.updated_at || new Date().toISOString(),
-                    tipo: 'test_completado'
-                  };
-
-                  setListaNotificaciones((prev) => {
-                    // Si ya existía como pendiente, podemos actualizar o limpiar la anterior y agregar la de completado
-                    const filtradas = prev.filter((n) => n.id !== `test-pend-${record.id}`);
-                    if (filtradas.some((n) => n.id === nuevaNotif.id)) return filtradas;
-                    return [nuevaNotif, ...filtradas];
-                  });
-                }
+                setListaNotificaciones((prev) => {
+                  // Evitar duplicados si ya existe la notificación
+                  const filtered = prev.filter((n) => n.id !== nuevaNotif.id);
+                  return [nuevaNotif, ...filtered];
+                });
               }
             )
             .subscribe();
@@ -260,7 +248,7 @@ export default function NotificadorTiempoReal() {
     return () => {
       isMounted = false;
       if (profilesChannel) supabase.removeChannel(profilesChannel);
-      if (testsChannel) supabase.removeChannel(testsChannel);
+      if (resultsChannel) supabase.removeChannel(resultsChannel);
     };
   }, []);
 
@@ -332,7 +320,7 @@ export default function NotificadorTiempoReal() {
           <div className="fixed left-4 right-4 mx-auto top-20 max-w-sm sm:absolute sm:inset-auto sm:right-0 sm:mt-2 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[999] overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h4 className="text-xs font-bold text-[#123440] uppercase tracking-wider">
-                {userRole === 'admin' ? 'Nuevos Registros' : 'Tus Evaluaciones'} ({totalNoLeidas})
+                {userRole === 'admin' ? 'Nuevos Registros' : 'Actividad de Evaluaciones'} ({totalNoLeidas})
               </h4>
               {totalNoLeidas > 0 && (
                 <button 
@@ -350,7 +338,7 @@ export default function NotificadorTiempoReal() {
                 <p className="p-6 text-xs text-slate-400 text-center">Cargando notificaciones...</p>
               ) : listaNotificaciones.length === 0 ? (
                 <p className="p-6 text-xs text-slate-400 text-center">
-                  {userRole === 'admin' ? 'No hay nuevos registros en el sistema.' : 'No tienes notificaciones de exámenes recientes.'}
+                  {userRole === 'admin' ? 'No hay nuevos registros en el sistema.' : 'No tienes notificaciones recientes.'}
                 </p>
               ) : (
                 listaNotificaciones.map((n) => (
@@ -361,10 +349,10 @@ export default function NotificadorTiempoReal() {
                   >
                     <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
                       n.tipo === 'registro' ? 'bg-sky-50 text-sky-600' : 
-                      n.tipo === 'test_pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                      n.tipo === 'test_iniciado' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
                     }`}>
                       {n.tipo === 'registro' ? <UserPlus size={16} /> : 
-                       n.tipo === 'test_pendiente' ? <FileText size={16} /> : <FileCheck size={16} />}
+                       n.tipo === 'test_iniciado' ? <Clock size={16} /> : <FileCheck size={16} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-[#123440]">{n.titulo}</p>
