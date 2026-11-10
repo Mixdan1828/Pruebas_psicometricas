@@ -1,4 +1,3 @@
-// componentes/NotificadorTiempoReal.tsx
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -9,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 
 interface NotificacionItem {
-  id: string; // Ejemplo: "uuid-del-resultado-fin" o "uuid-del-resultado-inicio"
+  id: string;
   titulo: string;
   mensaje: string;
   urlDestino: string;
@@ -31,14 +30,12 @@ export default function NotificadorTiempoReal() {
       try {
         setLoading(true);
 
-        // 1. Obtener usuario autenticado actual
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || !isMounted) {
           if (isMounted) setLoading(false);
           return;
         }
 
-        // 2. Obtener los IDs de las notificaciones que este usuario ya marcó como vistas/descartadas
         const { data: descartadasData } = await supabase
           .from('notification_dismissals')
           .select('notification_id')
@@ -46,7 +43,6 @@ export default function NotificadorTiempoReal() {
 
         const idsDescartados = new Set(descartadasData?.map((d) => d.notification_id) || []);
 
-        // 3. Consultar resultados directamente por user_id
         let { data: resultados, error } = await supabase
           .from('candidate_results')
           .select(`
@@ -107,10 +103,8 @@ export default function NotificadorTiempoReal() {
             const nombreCandidato = [cand?.full_name, cand?.paternal_surname].filter(Boolean).join(' ') || 'Un candidato';
             const nombreTest = test?.name || 'Prueba psicométrica';
 
-            // ID único para el evento de finalización
             const idFin = `${item.id}-fin`;
             if ((item.status === 'completo' || item.status === 'completed' || item.completed_at) && item.completed_at) {
-              // Solo se agrega si el usuario NO la ha descartado antes
               if (!idsDescartados.has(idFin)) {
                 notifsIniciales.push({
                   id: idFin,
@@ -123,7 +117,6 @@ export default function NotificadorTiempoReal() {
               }
             }
 
-            // ID único para el evento de inicio
             const idInicio = `${item.id}-inicio`;
             if (item.started_at) {
               if (!idsDescartados.has(idInicio)) {
@@ -146,7 +139,6 @@ export default function NotificadorTiempoReal() {
           setListaNotificaciones(notifsIniciales.slice(0, 15));
           setLoading(false);
 
-          // 4. Configurar Realtime
           channel = supabase
             .channel(`alertas_aplicador_${user.id}`)
             .on(
@@ -229,12 +221,10 @@ export default function NotificadorTiempoReal() {
     };
   }, []);
 
-  // Función para descartar/marcar como vista una notificación individual y guardarlo en Supabase
   const manejarClickNotificacion = async (n: NotificacionItem) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Guardamos en la base de datos que este ID ya fue visto
         await supabase.from('notification_dismissals').insert({
           user_id: user.id,
           notification_id: n.id
@@ -244,13 +234,11 @@ export default function NotificadorTiempoReal() {
       console.error("Error al registrar notificación como vista:", e);
     }
 
-    // Quitamos la notificación de la lista visualmente y redirigimos
     setListaNotificaciones((prev) => prev.filter((item) => item.id !== n.id));
     router.push(n.urlDestino);
     setIsOpen(false);
   };
 
-  // Función para limpiar todo y registrar todas las actuales en la base de datos
   const limpiarTodas = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -288,53 +276,62 @@ export default function NotificadorTiempoReal() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-2 w-[90vw] max-w-sm sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[999] overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-            <h4 className="text-xs font-bold text-[#123440] uppercase tracking-wider">
-              Notificaciones ({totalNoLeidas})
-            </h4>
-            {totalNoLeidas > 0 && (
-              <button 
-                type="button"
-                onClick={limpiarTodas}
-                className="text-[10px] text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
-              >
-                Limpiar todo
-              </button>
-            )}
-          </div>
+        <>
+          {/* Fondo oscuro translúcido para cerrar al tocar fuera en móviles */}
+          <div 
+            className="fixed inset-0 z-[998] bg-black/10 sm:hidden" 
+            onClick={() => setIsOpen(false)} 
+          />
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-            {loading ? (
-              <p className="p-6 text-xs text-slate-400 text-center">Cargando notificaciones...</p>
-            ) : listaNotificaciones.length === 0 ? (
-              <p className="p-6 text-xs text-slate-400 text-center">No hay notificaciones recientes para tus pruebas.</p>
-            ) : (
-              listaNotificaciones.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => manejarClickNotificacion(n)}
-                  className="p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 text-left"
+          {/* Contenedor adaptativo: fixed y centrado en móviles, absolute a la derecha en PC */}
+          <div className="fixed left-4 right-4 mx-auto top-20 max-w-sm sm:absolute sm:inset-auto sm:right-0 sm:mt-2 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-[999] overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h4 className="text-xs font-bold text-[#123440] uppercase tracking-wider">
+                Notificaciones ({totalNoLeidas})
+              </h4>
+              {totalNoLeidas > 0 && (
+                <button 
+                  type="button"
+                  onClick={limpiarTodas}
+                  className="text-[10px] text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
                 >
-                  <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
-                    n.tipo === 'fin' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    {n.tipo === 'fin' ? <CheckCircle2 size={16} /> : <Timer size={16} />}
+                  Limpiar todo
+                </button>
+              )}
+            </div>
+
+            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+              {loading ? (
+                <p className="p-6 text-xs text-slate-400 text-center">Cargando notificaciones...</p>
+              ) : listaNotificaciones.length === 0 ? (
+                <p className="p-6 text-xs text-slate-400 text-center">No hay notificaciones recientes para tus pruebas.</p>
+              ) : (
+                listaNotificaciones.map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => manejarClickNotificacion(n)}
+                    className="p-3.5 hover:bg-slate-50 transition-colors cursor-pointer flex items-start gap-3 text-left"
+                  >
+                    <div className={`p-1.5 rounded-lg shrink-0 mt-0.5 ${
+                      n.tipo === 'fin' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {n.tipo === 'fin' ? <CheckCircle2 size={16} /> : <Timer size={16} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-[#123440]">{n.titulo}</p>
+                      <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.mensaje}</p>
+                      {n.fecha && (
+                        <span className="text-[9px] text-slate-400 mt-1 block font-mono">
+                          {new Date(n.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(n.fecha).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[#123440]">{n.titulo}</p>
-                    <p className="text-[11px] text-slate-600 leading-snug mt-0.5">{n.mensaje}</p>
-                    {n.fecha && (
-                      <span className="text-[9px] text-slate-400 mt-1 block font-mono">
-                        {new Date(n.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(n.fecha).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
