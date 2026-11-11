@@ -155,7 +155,7 @@ export default function ResolverOrchestrator() {
     
     if (rawType.includes('raven') || rawName.includes('raven')) return 'raven';
     if (rawType.includes('cleaver') || rawName.includes('cleaver')) return 'cleaver';
-    if (rawType.includes('nom-035') || rawType.includes('nom035') || rawName.includes('nom-035') || rawName.includes('integral')) return 'nom-035-integral';
+    if (rawType.includes('nom-035') || rawType.includes('nom035') || rawName.includes('nom-035') || rawName.includes('integral') || rawName.includes('nom035')) return 'nom-035-integral';
     if (rawType.includes('terman') || rawName.includes('terman') || rawName.includes('merrill')) return 'terman';
     
     return rawType || 'terman';
