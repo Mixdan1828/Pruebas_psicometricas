@@ -174,13 +174,13 @@ export default function Nom035IntegralView({ testData, onComplete }: Nom035Integ
       // Reglas condicionales de la Sección 3
       if (group.id === '3-14') {
         // Preguntas 134-137: Solo si en la 133 respondió "Sí"
-        const q133 = allQuestionsMap.get(133);
-        if (!q133 || !isYesAnswer(getSelectedValue(q133.id))) continue;
+        const q134 = allQuestionsMap.get(134);
+        if (!q134 || !isYesAnswer(getSelectedValue(q134.id))) continue;
       }
       if (group.id === '3-16') {
         // Preguntas 139-142: Solo si en la 138 respondió "Sí"
-        const q138 = allQuestionsMap.get(138);
-        if (!q138 || !isYesAnswer(getSelectedValue(q138.id))) continue;
+        const q139 = allQuestionsMap.get(139);
+        if (!q139 || !isYesAnswer(getSelectedValue(q139.id))) continue;
       }
 
       groups.push(group);
