@@ -74,12 +74,12 @@ const SECTIONS: SectionConfig[] = [
       { id: '3-8', start: 99, end: 104, title: "Las siguientes preguntas están relacionadas con la capacitación e información que se le proporciona sobre su trabajo." },
       { id: '3-9', start: 105, end: 109, title: "Las siguientes preguntas están relacionadas con el o los jefes con quien tiene contacto." },
       { id: '3-10', start: 110, end: 114, title: "Las siguientes preguntas se refieren a las relaciones con sus compañeros." },
-      { id: '3-11', start: 115, end: 124, title: "Las siguientes preguntas están relacionadas con la información que recibe sobre su rendimiento en el trabajo, el reconocimiento, el sentido de pertenencia y estabilidad que le ofrece su trabajo." },
-      { id: '3-12', start: 125, end: 132, title: "Las siguientes preguntas están relacionadas con actos de violencia laboral (malos tratos, acoso, hostigamiento, acoso psicológico)." },
-      { id: '3-13', start: 133, end: 133, title: "La siguiente pregunta está relacionada con la atención a clientes y usuarios.", isConditionalGate: true },
-      { id: '3-14', start: 134, end: 137, title: "Si su respuesta fue Sí, responda las siguientes preguntas." },
-      { id: '3-15', start: 138, end: 138, title: "La siguiente pregunta está relacionada con los trabajadores que supervisa.", isConditionalGate: true },
-      { id: '3-16', start: 139, end: 142, title: "Si su respuesta fue Sí, responda las siguientes preguntas." },
+      { id: '3-11', start: 115, end: 125, title: "Las siguientes preguntas están relacionadas con la información que recibe sobre su rendimiento en el trabajo, el reconocimiento, el sentido de pertenencia y estabilidad que le ofrece su trabajo." },
+      { id: '3-12', start: 126, end: 133, title: "Las siguientes preguntas están relacionadas con actos de violencia laboral (malos tratos, acoso, hostigamiento, acoso psicológico)." },
+      { id: '3-13', start: 134, end: 134, title: "La siguiente pregunta está relacionada con la atención a clientes y usuarios.", isConditionalGate: true },
+      { id: '3-14', start: 135, end: 138, title: "Si su respuesta fue Sí, responda las siguientes preguntas." },
+      { id: '3-15', start: 139, end: 139, title: "La siguiente pregunta está relacionada con los trabajadores que supervisa.", isConditionalGate: true },
+      { id: '3-16', start: 140, end: 143, title: "Si su respuesta fue Sí, responda las siguientes preguntas." },
     ]
   }
 ];
