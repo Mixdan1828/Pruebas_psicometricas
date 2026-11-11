@@ -104,13 +104,14 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
       const totalSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const mins = Math.floor(totalSeconds / 60);
       const secs = totalSeconds % 60;
-      setTimeElapsedStr(`${mins} minutos y ${secs} segundos`);
+      const timeStr = `${mins} minutos y ${secs} segundos`;
+      setTimeElapsedStr(timeStr);
+      
       // Variable temporal del tiempo total (minutos exactos) para lectura desde el mensaje/etiqueta
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('tiempo_evaluacion', timeElapsedStr || `${mins} minutos y ${secs} segundos`);
+        localStorage.setItem('tiempo_evaluacion', timeStr);
       }
       setIsFinished(true);
-      // No se libera el guard: la sesión ya terminó.
       return prevIndex;
     });
   }, [isFinished, uniqueTestsList.length]);
@@ -127,7 +128,7 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
     };
   }, [isFinished]);
 
-  // Validar si la lista de tests está vacía (después de los hooks para no romper reglas de hooks)
+  // Validar si la lista de tests está vacía
   if (!uniqueTestsList || uniqueTestsList.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F9F9F7] text-slate-700 font-body">
@@ -143,7 +144,6 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
         testNames={completedTestsNames}
         dateCompleted={timeElapsedStr}
         onGoHome={() => window.location.href = '/'}
-        
       />
     );
   }
@@ -155,7 +155,7 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
   const renderCurrentTestView = () => {
     const testIdentifier = (currentTest.type || currentTest.name || "").toLowerCase();
     // key única por test: fuerza remount al avanzar y evita arrastrar
-    // estado/respuestas del test anterior (causa de "duplicados" visuales).
+    // estado/respuestas del test anterior.
     const viewKey = `${currentTest.id}-${safeIndex}`;
 
     if (testIdentifier.includes('terman') || testIdentifier.includes('merrill')) {
@@ -168,7 +168,7 @@ export default function TestManager({ patientName, testsList }: TestManagerProps
       );
     }
 
-    // NOM-035 Integral (Guías I, II y III - 137 preguntas)
+    // NOM-035 Integral (Guías I, II y III)
     if (testIdentifier.includes('nom-035') || testIdentifier.includes('nom035') || testIdentifier.includes('integral')) {
       return (
         <Nom035IntegralView 
