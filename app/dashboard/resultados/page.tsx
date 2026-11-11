@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { generarPDFHojaRespuestasTerman, esTestTerman,} from "./pdf/generarPDFTerman";
 import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
 import { generarPDFHojaRespuestasRaven, esTestRaven } from "./pdf/generarPDFRaven";
+import { generarPDFHojaRespuestasNom035, esTestNom035 as esTestNom035PDF } from './pdf/generarNom035';
 // Importamos el modal modular y el SideNavBar
 import { ModalVistaPreviaPruebas } from "./ModalVistaPreviaPruebas";
 import SideNavBar from "../../componentes/SideNavBar";
@@ -339,6 +340,15 @@ function DetalleCandidatoContent() {
           pdfGenerado = true;
         } else if (esTestRaven(prueba)) {
           generarPDFHojaRespuestasRaven({
+            candidato: datosCandidato,
+            prueba: prueba,
+            fechaAplicacion: prueba.started_at || prueba.completed_at,
+            onError: (mensaje: string) => setFeedback({ tipo: "error", mensaje }),
+          });
+          pdfGenerado = true;
+        }
+        else if (esTestNom035PDF(prueba)) {
+          generarPDFHojaRespuestasNom035({
             candidato: datosCandidato,
             prueba: prueba,
             fechaAplicacion: prueba.started_at || prueba.completed_at,

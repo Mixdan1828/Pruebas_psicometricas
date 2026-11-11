@@ -6,9 +6,11 @@ import { Eye, X, ArrowLeft, Download } from 'lucide-react';
 import { generarPDFHojaRespuestasTerman, esTestTerman } from './pdf/generarPDFTerman';
 import { generarPDFHojaRespuestasClaver, esTestClaver } from "./pdf/generarPDFClaver";
 import { generarPDFHojaRespuestasRaven, esTestRaven } from "./pdf/generarPDFRaven";
+import { generarPDFHojaRespuestasNom035, esTestNom035 as esTestNom035PDF } from './pdf/generarNom035';
 import { VistaPreviaTerman } from "./vistas-previas/VistaPreviaTerman";
 import { VistaPreviaClaver } from "./vistas-previas/VistaPreviClaver";
 import VistaPreviaRaven from "./vistas-previas/VistaPreviaRaven";
+import VistaPreviaNom035 from "./vistas-previas/VistaPreviaNom035"; // Asegúrate de tener esta vista o la que creamos
 
 interface ModalVistaPreviaProps {
   isOpen: boolean;
@@ -20,6 +22,13 @@ interface ModalVistaPreviaProps {
   nombreTest: (prueba: any) => string;
   onDescargarPrueba?: (prueba: any) => void;
 }
+
+// Función auxiliar para detectar si es test NOM-035 Integral
+const esTestNom035 = (prueba: any) => {
+  const tName = (prueba?.tests?.name || prueba?.test_name || "").toLowerCase();
+  const tType = (prueba?.tests?.type || "").toLowerCase();
+  return tName.includes('nom-035') || tName.includes('nom035') || tName.includes('integral') || tType.includes('nom');
+};
 
 export function ModalVistaPreviaPruebas({
   isOpen,
@@ -44,7 +53,7 @@ export function ModalVistaPreviaPruebas({
     .join(" ")
     .trim();
 
-  // Generación nativa limpia mediante jsPDF
+  // Generación nativa limpia mediante jsPDF o acciones de descarga
   const handleDescargarPDF = () => {
     if (!pruebaSeleccionada) return;
 
@@ -76,6 +85,15 @@ export function ModalVistaPreviaPruebas({
         prueba: pruebaSeleccionada,
         fechaAplicacion: fechaApp,
         onError: (mensaje) => alert(mensaje),
+      });
+      return;
+    }
+
+    if (esTestNom035PDF(pruebaSeleccionada)) {
+      generarPDFHojaRespuestasNom035({
+      candidato: candidato,
+      prueba: pruebaSeleccionada,
+      onError: (mensaje) => alert(mensaje),
       });
       return;
     }
@@ -134,7 +152,7 @@ export function ModalVistaPreviaPruebas({
                   return (
                     <div
                       key={p.id || i}
-                      className="border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 hover:border-[#0d313f]/40 transition-colors bg-slate-50/50"
+                      className="border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 hover:border-[#0d313f]/45 transition-colors bg-slate-50/50"
                     >
                       <div className="space-y-1">
                         <h4 className="font-bold text-[#0d313f]">
@@ -220,6 +238,12 @@ export function ModalVistaPreviaPruebas({
                   />
                 ) : esTestRaven(pruebaSeleccionada) ? (
                   <VistaPreviaRaven
+                    candidato={candidato}
+                    prueba={pruebaSeleccionada}
+                    formatearFecha={formatearFecha}
+                  />
+                ) : esTestNom035(pruebaSeleccionada) ? (
+                  <VistaPreviaNom035
                     candidato={candidato}
                     prueba={pruebaSeleccionada}
                     formatearFecha={formatearFecha}
