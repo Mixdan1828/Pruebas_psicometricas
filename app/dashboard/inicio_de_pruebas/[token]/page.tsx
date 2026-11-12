@@ -166,7 +166,7 @@ const DemographicsForm = memo(function DemographicsForm({
               className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#123440] focus:ring-teal-600 cursor-pointer"
             />
             <label htmlFor="terminos" className="text-xs text-slate-600 select-none leading-relaxed">
-              He leído y acepto los <a href="..\..\..\\terminos-de-servicio\\page.tsx" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Términos y Condiciones</a> y la <a href="/aviso-de-privacidad" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Política de Privacidad</a> de la plataforma de evaluación institucional.
+              He leído y acepto los <a href="/terminos-de-servicio" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Términos y Condiciones</a> y la <a href="/aviso-de-privacidad" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Política de Privacidad</a> de la plataforma de evaluación institucional.
             </label>
           </div>
 
