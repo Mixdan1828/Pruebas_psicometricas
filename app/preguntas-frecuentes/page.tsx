@@ -96,7 +96,7 @@ export default function PreguntasFrecuentes() {
           </div>
           <span className="text-[#0E6433] font-bold text-xs uppercase tracking-widest block mb-2">Resolviendo tus dudas</span>
           <h2 className="text-3xl md:text-4xl font-extrabold text-[#123440] tracking-tight">Preguntas Frecuentes</h2>
-          <p className="text-slate-600 text-sm mt-2 max-w-lg mx-auto">
+          <p className="text-slate-600 text-sm mt-2 max-w-lg mx-auto text-justify">
             Encuentra respuestas rápidas sobre el acceso, funcionamiento y gestión de las evaluaciones en el sistema.
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function PreguntasFrecuentes() {
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-6 pb-5 pt-1 text-slate-600 text-xs md:text-sm leading-relaxed border-t border-slate-100 bg-slate-50/50">
+                  <div className="px-6 pb-5 pt-1 text-slate-600 text-xs md:text-sm leading-relaxed border-t border-slate-100 bg-slate-50/50 text-justify">
                     {faq.respuesta}
                   </div>
                 )}
