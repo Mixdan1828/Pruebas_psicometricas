@@ -1,3 +1,4 @@
+// app/dashboard/inicio_de_pruebas/[token]/page.tsx (o tu ruta actual)
 "use client";
 
 import React, { useState, useCallback, useEffect, memo } from 'react';
@@ -41,6 +42,8 @@ interface DemographicsFormProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   loading: boolean;
   errorMessage: string;
+  terminosAceptados: boolean;
+  setTerminosAceptados: (val: boolean) => void;
 }
 
 const DemographicsForm = memo(function DemographicsForm({
@@ -50,6 +53,8 @@ const DemographicsForm = memo(function DemographicsForm({
   handleInputChange,
   loading,
   errorMessage,
+  terminosAceptados,
+  setTerminosAceptados,
 }: DemographicsFormProps) {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -64,7 +69,7 @@ const DemographicsForm = memo(function DemographicsForm({
           <UserCheck className="text-[#416912]" size={28} />
         </div>
 
-        <p className="text-xs text-slate-500">Por requerimiento clínico institucional, ingresa tus datos antes de iniciar el examen.</p>
+        <p className="text-xs text-slate-500">Por requerimiento clínico institucional, ingresa tus datos y acepta los términos antes de iniciar el examen.</p>
 
         {errorMessage && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-semibold flex items-center gap-2" role="alert">
@@ -104,7 +109,6 @@ const DemographicsForm = memo(function DemographicsForm({
             </div>
           </div>
 
-          {/* Sede de Evaluación corregida con los valores exactos */}
           <div>
             <label htmlFor="sede" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Sede de Evaluación</label>
             <select id="sede" required name="sede" value={formData.sede} onChange={handleInputChange} className="w-full border border-slate-200 rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-teal-600 text-[#202221]">
@@ -152,6 +156,20 @@ const DemographicsForm = memo(function DemographicsForm({
             </div>
           </div>
 
+          {/* CHECKBOX DE TÉRMINOS Y CONDICIONES */}
+          <div className="flex items-start gap-3 pt-2">
+            <input 
+              type="checkbox" 
+              id="terminos" 
+              checked={terminosAceptados} 
+              onChange={(e) => setTerminosAceptados(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#123440] focus:ring-teal-600 cursor-pointer"
+            />
+            <label htmlFor="terminos" className="text-xs text-slate-600 select-none leading-relaxed">
+              He leído y acepto los <a href="..\..\..\\terminos-de-servicio\\page.tsx" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Términos y Condiciones</a> y la <a href="/aviso-de-privacidad" target="_blank" className="text-[#416912] font-bold underline hover:text-[#123440]">Política de Privacidad</a> de la plataforma de evaluación institucional.
+            </label>
+          </div>
+
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose} className="w-1/3 py-3 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer">
               Cancelar
@@ -177,6 +195,7 @@ export default function BienvenidaEvaluacion() {
   const [linkInfo, setLinkInfo] = useState<LinkData | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [pageError, setPageError] = useState('');
+  const [terminosAceptados, setTerminosAceptados] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -223,8 +242,15 @@ export default function BienvenidaEvaluacion() {
 
   const handleStartTest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMessage('');
+
+    // Validación de aceptación de TyC
+    if (!terminosAceptados) {
+      setErrorMessage('Debes aceptar los Términos y Condiciones y la Política de Privacidad para continuar.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       if (!linkInfo) throw new Error('Enlace no disponible.');
@@ -267,7 +293,7 @@ export default function BienvenidaEvaluacion() {
     } finally {
       setLoading(false);
     }
-  }, [formData, linkInfo, token, router]);
+  }, [formData, linkInfo, token, router, terminosAceptados]);
 
   if (checkingToken) {
     return (
@@ -402,6 +428,8 @@ export default function BienvenidaEvaluacion() {
           handleInputChange={handleInputChange}
           loading={loading}
           errorMessage={errorMessage}
+          terminosAceptados={terminosAceptados}
+          setTerminosAceptados={setTerminosAceptados}
         />
       )}
     </div>

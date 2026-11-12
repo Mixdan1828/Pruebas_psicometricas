@@ -1,63 +1,52 @@
-"use client";
-
-import React from 'react';
-import { FileText, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-
-export default function TerminosServicio() {
+// app/terminos-de-servicio/page.tsx
+export default function TerminosServicioPage() {
   return (
-    <div className="min-h-screen bg-[#fcf9f8] text-[#202221] font-sans">
-      {/* Barra superior de navegación simple */}
-      <div className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
-        <Link 
-          href="/" 
-          className="flex items-center gap-2 text-xs font-bold text-[#123440] hover:text-[#1A625F] transition-colors"
-        >
-          <ArrowLeft size={16} />
-          <span>Regresar al inicio</span>
-        </Link>
-        <h1 className="text-xs font-bold uppercase tracking-wider text-slate-500">Documento Legal</h1>
+    <div className="max-w-4xl mx-auto px-6 py-12 text-slate-800 space-y-6">
+      <div className="border-b border-slate-200 pb-4">
+        <span className="text-xs font-bold text-[#416912] uppercase tracking-wider">Legal</span>
+        <h1 className="text-2xl md:text-3xl font-bold text-[#0d313f] mt-1">
+          Términos y Condiciones de Uso y Política de Privacidad
+        </h1>
+        <p className="text-xs text-slate-500 mt-1">Última actualización: Noviembre de 2026</p>
       </div>
 
-      <main className="max-w-4xl mx-auto px-6 py-12 md:py-16">
-        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200/80">
-          <div className="flex items-center gap-3 mb-6 text-[#123440]">
-            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
-              <FileText size={26} />
-            </div>
-            <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-[#123440]">Términos de Servicio</h2>
-              <p className="text-xs text-slate-400 text-justify">Última actualización: Enero de 2026</p>
-            </div>
-          </div>
+      <section className="space-y-3 text-sm md:text-base text-justify">
+        <h2 className="font-bold text-[#0d313f] text-lg mt-4">1. Identificación del Titular y la Plataforma</h2>
+        <p>
+          El presente documento regula el acceso, navegación y uso del sitio web y plataforma digital <strong>Pruebas Psicométricas</strong> (en adelante, la <em>Plataforma</em>), operada y titularidad de la <strong>Fundación Doctor Hernández Zurita, I.B.P.</strong> (en adelante, el <em>Titular</em>), institución de beneficencia privada legalmente constituida. Al acceder a la Plataforma y utilizar nuestros servicios, el usuario acepta de manera expresa y sin reservas los términos estipulados en este documento.
+        </p>
 
-          <div className="space-y-6 text-slate-600 text-sm leading-relaxed">
-            <p className="text-justify">
-              Bienvenido al Portal y Sistema de Pruebas Psicométricas de la <strong>Fundación Doctor Hernández Zurita, I.B.P.</strong> Al acceder o utilizar nuestra plataforma, usted acepta cumplir y estar sujeto a los siguientes términos y condiciones de uso.
-            </p>
+        <h2 className="font-bold text-[#0d313f] text-lg mt-4">2. Políticas de Acceso y Navegación</h2>
+        <ul className="list-disc pl-5 space-y-2">
+          <li><strong>Acceso Autorizado:</strong> El acceso a los cuestionarios y evaluaciones psicométricas (tales como NOM-035, Terman, Claver, Raven, entre otros) está restringido a candidatos, usuarios y evaluadores autorizados mediante credenciales de acceso, enlaces únicos o códigos asignados por el Titular o por administradores de recursos humanos autorizados.</li>
+          <li><strong>Uso Adecuado:</strong> El usuario se compromete a hacer un uso lícito, diligente y correcto de la Plataforma, absteniéndose de utilizarla para realizar prácticas fraudulentas, suplantación de identidad, alterar los sistemas informáticos o intentar extraer información confidencial de terceros.</li>
+          <li><strong>Requisito de Aceptación:</strong> Para iniciar cualquier test o evaluación dentro de la Plataforma, es un requisito indispensable que el usuario lea y marque la casilla de aceptación de estos Términos y Condiciones y de la Política de Privacidad.</li>
+        </ul>
 
-            <h3 className="font-bold text-[#123440] text-base pt-2">1. Uso Autorizado</h3>
-            <p className="text-justify">
-              Esta plataforma es de carácter estrictamente interno y está destinada al uso exclusivo del personal autorizado, aplicadores y administradores de la Fundación. Queda prohibido el acceso no autorizado, la divulgación de credenciales o el uso indebido de la información contenida en el sistema.
-            </p>
+        <h2 className="font-bold text-[#0d313f] text-lg mt-4">3. Protección de Datos y Privacidad</h2>
+        <p>
+          De conformidad con la legislación aplicable en materia de protección de datos personales, el Titular informa que los datos recabados (incluyendo nombre completo, sexo, fecha de nacimiento, edad, respuestas y resultados) serán utilizados exclusivamente con fines de evaluación laboral, selección de personal, cumplimiento normativo (como la NOM-035-STPS) y análisis estadísticos internos, bajo estrictos estándares de confidencialidad.
+        </p>
 
-            <h3 className="font-bold text-[#123440] text-base pt-2">2. Cuentas y Credenciales de Acceso</h3>
-            <p className="text-justify">
-              El acceso al sistema se realiza mediante autenticación federada con cuentas institucionales de Google. El usuario es responsable de mantener la confidencialidad de su sesión y de todas las actividades que ocurran bajo su cuenta.
-            </p>
+        <h2 className="font-bold text-[#0d313f] text-lg mt-4">4. Propiedad Intelectual y Enlaces Externos</h2>
+        <p>
+          Todos los contenidos, interfaces, reactivos de las pruebas psicométricas, logotipos (incluyendo el imagotipo de la Fundación Doctor Hernández Zurita, I.B.P.), diseños, código fuente y bases de datos son propiedad exclusiva del Titular. Queda prohibida su reproducción o comercialización sin autorización. Asimismo, el Titular no asume responsabilidad por los contenidos o políticas de sitios web externos enlazados.
+        </p>
 
-            <h3 className="font-bold text-[#123440] text-base pt-2">3. Propiedad Intelectual</h3>
-            <p className="text-justify">
-              Todo el software, código fuente, interfaces, logotipos, bases de datos y contenidos visuales del Sistema Psicométrico son propiedad exclusiva de la Fundación Doctor Hernández Zurita o cuentan con las licencias respectivas, estando protegidos por las leyes de propiedad intelectual aplicables.
-            </p>
+        <h2 className="font-bold text-[#0d313f] text-lg mt-4">5. Legislación y Jurisdicción Aplicable</h2>
+        <p>
+          Para la interpretación y cumplimiento de los presentes Términos y Condiciones, las partes se someten expresamente a las leyes vigentes y a los tribunales competentes de los Estados Unidos Mexicanos correspondientes a la ubicación del Titular.
+        </p>
+      </section>
 
-            <h3 className="font-bold text-[#123440] text-base pt-2">4. Modificaciones y Suspensión</h3>
-            <p className="text-justify">
-              La administración se reserva el derecho de modificar, suspender o interrumpir temporal o permanentemente el acceso al sistema en cualquier momento por motivos de mantenimiento, seguridad institucional o actualización de políticas operativas.
-            </p>
-          </div>
-        </div>
-      </main>
+      <div className="pt-6 border-t border-slate-200">
+        <a
+          href="javascript:window.close();"
+          className="inline-block px-4 py-2 bg-[#0d313f] text-white rounded-lg text-sm font-semibold hover:bg-[#164a5c] transition-colors"
+        >
+          Cerrar ventana
+        </a>
+      </div>
     </div>
   );
 }
