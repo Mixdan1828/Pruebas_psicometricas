@@ -403,7 +403,6 @@ export default function Home() {
             <div className="flex flex-col gap-3">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Recursos</h4>
               <ul className="flex flex-col gap-2 text-xs md:text-sm text-slate-300">
-                <li><a href="#" className="hover:text-[#9DBA3A] transition-colors">Donaciones</a></li>
                 <li>
                   <Link href="/preguntas-frecuentes" className="hover:text-[#9DBA3A] transition-colors">
                     Preguntas Frecuentes
