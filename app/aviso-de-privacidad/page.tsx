@@ -27,32 +27,32 @@ export default function AvisoPrivacidad() {
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-[#123440]">Aviso de Privacidad</h2>
-              <p className="text-xs text-slate-400">Última actualización: Enero de 2026</p>
+              <p className="text-xs text-slate-400 text-justify">Última actualización: Enero de 2026</p>
             </div>
           </div>
 
           <div className="space-y-6 text-slate-600 text-sm leading-relaxed">
-            <p>
+            <p className="text-justify">
               La <strong>Fundación Doctor Hernández Zurita, I.B.P.</strong>, con domicilio en Veracruz, México, es responsable del tratamiento y protección de los datos personales que nos proporcione a través de este Sistema de Pruebas Psicométricas.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">1. Datos Personales Recabados</h3>
-            <p>
+            <p className="text-justify">
               Para cumplir con las finalidades establecidas en este aviso, recabamos datos de identificación y contacto obtenidos mediante su cuenta institucional de Google (nombre completo, correo electrónico y fotografía de perfil), así como información derivada de la gestión de evaluaciones psicométricas del personal y candidatos.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">2. Finalidades del Tratamiento</h3>
-            <p>
+            <p className="text-justify">
               Los datos personales recabados serán utilizados para las siguientes finalidades esenciales: verificar la identidad del usuario, autorizar el acceso interno al portal institucional, administrar perfiles y roles de usuario, y dar seguimiento a los procesos de evaluación psicométrica.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">3. Protección y Seguridad</h3>
-            <p>
+            <p className="text-justify">
               Implementamos medidas de seguridad administrativas, técnicas y físicas necesarias para proteger sus datos personales contra daño, pérdida, alteración, destrucción o el uso, acceso o tratamiento no autorizado, respaldados en infraestructura segura de bases de datos.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">4. Derechos ARCO</h3>
-            <p>
+            <p className="text-justify">
               Usted tiene derecho a conocer qué datos tenemos de su persona, para qué los utilizamos y las condiciones del uso que les damos (Acceso). Asimismo, es su derecho solicitar la corrección de su información personal en caso de que esté desactualizada, sea inexacta o incompleta (Rectificación); que la eliminemos de nuestros registros o bases de datos cuando considere que la misma no está siendo utilizada adecuadamente (Cancelación); así como oponerse al uso de sus datos personales para fines específicos (Oposición).
             </p>
           </div>

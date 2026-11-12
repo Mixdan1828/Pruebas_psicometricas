@@ -27,32 +27,32 @@ export default function TerminosServicio() {
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-[#123440]">Términos de Servicio</h2>
-              <p className="text-xs text-slate-400">Última actualización: Enero de 2026</p>
+              <p className="text-xs text-slate-400 text-justify">Última actualización: Enero de 2026</p>
             </div>
           </div>
 
           <div className="space-y-6 text-slate-600 text-sm leading-relaxed">
-            <p>
+            <p className="text-justify">
               Bienvenido al Portal y Sistema de Pruebas Psicométricas de la <strong>Fundación Doctor Hernández Zurita, I.B.P.</strong> Al acceder o utilizar nuestra plataforma, usted acepta cumplir y estar sujeto a los siguientes términos y condiciones de uso.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">1. Uso Autorizado</h3>
-            <p>
+            <p className="text-justify">
               Esta plataforma es de carácter estrictamente interno y está destinada al uso exclusivo del personal autorizado, aplicadores y administradores de la Fundación. Queda prohibido el acceso no autorizado, la divulgación de credenciales o el uso indebido de la información contenida en el sistema.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">2. Cuentas y Credenciales de Acceso</h3>
-            <p>
+            <p className="text-justify">
               El acceso al sistema se realiza mediante autenticación federada con cuentas institucionales de Google. El usuario es responsable de mantener la confidencialidad de su sesión y de todas las actividades que ocurran bajo su cuenta.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">3. Propiedad Intelectual</h3>
-            <p>
+            <p className="text-justify">
               Todo el software, código fuente, interfaces, logotipos, bases de datos y contenidos visuales del Sistema Psicométrico son propiedad exclusiva de la Fundación Doctor Hernández Zurita o cuentan con las licencias respectivas, estando protegidos por las leyes de propiedad intelectual aplicables.
             </p>
 
             <h3 className="font-bold text-[#123440] text-base pt-2">4. Modificaciones y Suspensión</h3>
-            <p>
+            <p className="text-justify">
               La administración se reserva el derecho de modificar, suspender o interrumpir temporal o permanentemente el acceso al sistema en cualquier momento por motivos de mantenimiento, seguridad institucional o actualización de políticas operativas.
             </p>
           </div>

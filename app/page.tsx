@@ -143,7 +143,7 @@ export default function Home() {
             Sistema de Pruebas Psicométricas
           </h1>
           
-          <p className="text-slate-300 text-base md:text-lg mt-4 max-w-2xl leading-relaxed">
+          <p className="text-slate-300 text-base md:text-lg mt-4 max-w-2xl leading-relaxed text-justify">
             Impulsamos el acceso a la salud especializada con un enfoque humano, transformando realidades a través de la medicina de vanguardia y la compasión social.
           </p>
         </div>
@@ -191,11 +191,11 @@ export default function Home() {
               Acerca de Nosotros
             </h2>
             
-            <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+            <p className="text-slate-600 text-sm md:text-base leading-relaxed text-justify">
               La Fundación Doctor Hernández Zurita, I.B.P., establecida en el año 2003, es una institución de beneficencia privada y sin fines de lucro. Su objetivo principal es otorgar servicios de salud a familias de escasos recursos económicos, así como a los grupos y personas más necesitadas.
             </p>
             
-            <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+            <p className="text-slate-600 text-sm md:text-base leading-relaxed text-justify">
               Esta labor se lleva a cabo mediante consultas médicas, intervenciones quirúrgicas y diversas acciones orientadas al mejoramiento de la salud general. Asimismo, la fundación se dedica a regalar y donar lentes, junto con los materiales necesarios para la recuperación y cuidado de la salud visual.
             </p>
 
@@ -205,7 +205,7 @@ export default function Home() {
                   <AiOutlineMedicineBox size={22} />
                 </div>
                 <h3 className="font-bold mb-2 text-[#123440] text-base">Excelente Medicina</h3>
-                <p className="text-slate-600 leading-relaxed text-xs md:text-sm">
+                <p className="text-slate-600 leading-relaxed text-xs md:text-sm text-justify">
                   Equipamiento de última generación y especialistas certificados.
                 </p>
               </div>
@@ -215,7 +215,7 @@ export default function Home() {
                   <LuHandHeart size={22} />
                 </div>
                 <h3 className="font-bold mb-2 text-[#123440] text-base">Sentido Humano</h3>
-                <p className="text-slate-600 leading-relaxed text-xs md:text-sm">
+                <p className="text-slate-600 leading-relaxed text-xs md:text-sm text-justify">
                   Trato digno, empático y personalizado para cada paciente.
                 </p>
               </div>
@@ -244,7 +244,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl md:text-3xl font-extrabold text-[#123440] tracking-tight">Misión</h3>
                 </div>
-                <p className="text-sm md:text-base text-slate-600 leading-relaxed">
+                <p className="text-sm md:text-base text-slate-600 leading-relaxed text-justify">
                   Ser una institución de beneficencia privada que mejora la calidad de vida y el acceso a la salud de personas con discapacidad visual, especialmente en sectores vulnerables del centro y sureste de México, a través de programas y proyectos oftalmológicos.
                 </p>
               </div>
@@ -259,7 +259,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl md:text-3xl font-extrabold text-[#123440] tracking-tight">Visión</h3>
                 </div>
-                <p className="text-sm md:text-base text-slate-600 leading-relaxed">
+                <p className="text-sm md:text-base text-slate-600 leading-relaxed text-justify">
                   Ser la institución líder en oftalmología en el centro y sureste de México, ofreciendo servicios médicos y quirúrgicos de alta calidad, con tecnología avanzada y profesionales certificados, para mejorar la salud visual y la calidad de vida de nuestros pacientes.
                 </p>
               </div>
@@ -282,7 +282,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#123440] tracking-tight leading-tight">
               Funciones avanzadas para optimizar la evaluación de personal
             </h2>
-            <p className="text-slate-600 text-base md:text-lg leading-relaxed">
+            <p className="text-slate-600 text-base md:text-lg leading-relaxed text-justify">
               Realice evaluaciones psicométricas en línea de manera rápida y confiable, para el reclutamiento y selección del personal de la fundación.
             </p>
           </div>
@@ -297,7 +297,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-extrabold text-[#123440] text-lg mb-2">Fácil acceso para resolver</h3>
-                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed text-justify">
                   Los candidatos pueden ingresar de forma sencilla mediante enlaces seguros generados por los aplicadores autorizados.
                 </p>
               </div>
@@ -310,7 +310,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-extrabold text-[#123440] text-lg mb-2">Disponibilidad 24/7</h3>
-                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed text-justify">
                   Los candidatos pueden responder los exámenes psicométricos en cualquier horario y desde cualquier dispositivo adaptable.
                 </p>
               </div>
@@ -323,7 +323,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-extrabold text-[#123440] text-lg mb-2">Control del Sistema</h3>
-                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed text-justify">
                   Plataforma exclusiva protegida por autenticación institucional de Google OAuth con supervisión y autorización de administradores.
                 </p>
               </div>
@@ -336,7 +336,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-extrabold text-[#123440] text-lg mb-2">Facilidad de uso</h3>
-                <p className="text-slate-600 text-xs md:text-sm leading-relaxed">
+                <p className="text-slate-600 text-xs md:text-sm leading-relaxed text-justify">
                   Los resultados y reportes detallados se generan de forma inmediata al momento en que cada candidato concluye sus evaluaciones.
                 </p>
               </div>
@@ -355,7 +355,7 @@ export default function Home() {
           <h2 className="text-3xl md:text-5xl font-extrabold mb-4 tracking-tight max-w-3xl mx-auto leading-tight">
             Acceso al Sistema Psicométrico
           </h2>
-          <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed text-justify">
             Portal exclusivo para aplicadores de pruebas y personal administrativo autorizado de la Fundación.
           </p>
 
@@ -382,7 +382,7 @@ export default function Home() {
               <h3 className="text-lg font-bold text-[#9DBA3A] tracking-wide">
                 Fundación Doctor Hernández Zurita, I.B.P.
               </h3>
-              <p className="text-xs md:text-sm text-slate-200 leading-relaxed max-w-sm">
+              <p className="text-xs md:text-sm text-slate-200 leading-relaxed max-w-sm text-justify">
                 Trabajando incansablemente por la salud y el bienestar de los sectores más vulnerables de nuestra comunidad.
               </p>
               
@@ -430,7 +430,7 @@ export default function Home() {
           </div>
 
           <div className="border-t border-white/20 pt-6 text-center text-[10px] md:text-xs text-slate-200">
-            <p>© 2026 Fundación Doctor Hernández Zurita. Todos los derechos reservados.</p>
+            <p className="text-justify">© 2026 Fundación Doctor Hernández Zurita. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
