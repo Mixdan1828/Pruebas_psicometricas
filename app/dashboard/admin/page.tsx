@@ -15,6 +15,7 @@ import SideNavBar from '../../componentes/SideNavBar';
 import ModalConfiguracionPerfil from '@/app/componentes/ModalConfiguracionPerfil';
 import NotificadorTiempoReal from '@/app/componentes/NotificadorTiempoReal';
 import { createClient } from '@/lib/supabase/client';
+import { eliminarUsuarioAdmin } from './actions'; // Importamos la Server Action segura
 
 interface Profile {
   id: string;
@@ -137,18 +138,16 @@ export default function UserManagementDashboard() {
     setShowDeleteModal(true);
   };
 
-  // Ejecutar eliminación del usuario
+  // Ejecutar eliminación completa del usuario (Auth + Profiles) mediante Server Action
   const ejecutarEliminacion = async () => {
     if (!userToDelete) return;
     try {
       setDeleting(true);
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userToDelete.id);
+      
+      // Llamamos a la Server Action segura del servidor
+      await eliminarUsuarioAdmin(userToDelete.id);
 
-      if (error) throw error;
-
+      // Actualizamos el estado local para reflejar la eliminación inmediatamente
       setProfiles((prev) => prev.filter((p) => p.id !== userToDelete.id));
       setShowDeleteModal(false);
       setUserToDelete(null);
@@ -390,7 +389,7 @@ export default function UserManagementDashboard() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-cyan-950">¿Estás seguro de eliminar este usuario?</h3>
-                <p className="text-xs text-slate-500">Esta acción eliminará permanentemente su perfil de la base de datos.</p>
+                <p className="text-xs text-slate-500">Esta acción eliminará permanentemente su cuenta y perfil de la base de datos.</p>
               </div>
             </div>
             
