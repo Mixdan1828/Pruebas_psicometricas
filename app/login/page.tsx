@@ -80,22 +80,19 @@ function LoginContent() {
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
-    setErrorMsg(null);
+  const supabase = createClient();
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      // Es fundamental que el redirectTo apunte dinámicamente al origin actual
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: getURL(),
-      },
-    });
-
-    if (error) {
-      setErrorMsg(error.message);
-      setLoading(false);
-      console.error('Error al iniciar sesión con Google:', error.message);
-    }
-  };
+  if (error) {
+    console.error('Error al iniciar sesión con Google:', error.message);
+  }
+};
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 font-sans overflow-x-hidden relative">

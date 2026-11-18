@@ -1,22 +1,11 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from "@/lib/supabase/admin";
-
-// Base canónica para todas las redirecciones del callback:
-// en cualquier deploy de Vercel usamos la URL oficial de producción
-// para no arrastrar dominios de vista previa; en local se respeta localhost.
-const getBaseUrl = (origin: string) => {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
-  if (envUrl && !origin.includes('localhost')) {
-    return envUrl;
-  }
-  return origin;
-};
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAppBaseUrl } from '@/lib/utils/app-url';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const base = getBaseUrl(origin);
+  const { searchParams } = new URL(request.url);
+  const base = getAppBaseUrl();
   const code = searchParams.get('code');
 
   // 1. Validar que el código de autorización exista
@@ -26,9 +15,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(url);
   }
 
-  // 2. Inicializar cliente de servidor de Supabase pasando las cookies
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  // 2. Inicializar cliente de servidor de Supabase de forma asíncrona
+  const supabase = await createClient();
 
   // 3. Intercambiar el `code` por una sesión
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -43,7 +31,7 @@ export async function GET(request: Request) {
   const userId = data.user.id;
   const supabaseAdmin = createAdminClient();
 
-  // 4. Consultar el `status` y el `role` del usuario en public.profiles usando el cliente admin
+  // 4. Consultar el `status` y el `role` del usuario en public.profiles usando admin
   const { data: existingProfile } = await supabaseAdmin
     .from('profiles')
     .select('status, role')
@@ -52,7 +40,7 @@ export async function GET(request: Request) {
 
   let profile = existingProfile;
 
-  // 5. Si no existe perfil, crearlo por defecto con estado 'pendiente' usando el cliente admin
+  // 5. Si no existe perfil, crearlo por defecto con estado 'pendiente'
   if (!profile) {
     const { data: newProfile, error: insertError } = await supabaseAdmin
       .from('profiles')
@@ -68,24 +56,20 @@ export async function GET(request: Request) {
 
     if (insertError) {
       console.error('Error creando perfil Google:', insertError.message);
-    } else {
-      profile = newProfile;
+      const url = new URL('/login', base);
+      url.searchParams.set('error', 'No se pudo completar la creación del perfil. Intenta nuevamente.');
+      return NextResponse.redirect(url);
     }
+    profile = newProfile;
   }
 
-  // 6. Validar estado de aprobación.
-  //    IMPORTANTE: el enum `user_status` de tu base de datos usa 'autorizado'
-  //    (no 'aprobado') como el valor que concede acceso. Si aquí usáramos
-  //    'aprobado' nunca coincidiría y nadie pasaría del /pending-approval.
+  // 6. Validar estado de aprobación
   const isApproved = profile?.status === 'autorizado';
 
   if (!isApproved) {
     return NextResponse.redirect(new URL('/pending-approval', base));
   }
 
-  // 7. Redirigir directamente a /dashboard.
-  //    El stub /dashboard no es una vista real: proxy.ts lo resuelve
-  //    a la ruta de inicio según el rol del usuario (admin/aplicador),
-  //    manteniendo un único punto de verdad para el mapeo rol -> ruta.
+  // 7. Redirigir a /dashboard
   return NextResponse.redirect(new URL('/dashboard', base));
 }
