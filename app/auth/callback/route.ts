@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Base canónica para todas las redirecciones del callback:
 // en cualquier deploy de Vercel usamos la URL oficial de producción
@@ -40,9 +41,10 @@ export async function GET(request: Request) {
   }
 
   const userId = data.user.id;
+  const supabaseAdmin = createAdminClient();
 
-  // 4. Consultar el `status` y el `role` del usuario en public.profiles
-  const { data: existingProfile } = await supabase
+  // 4. Consultar el `status` y el `role` del usuario en public.profiles usando el cliente admin
+  const { data: existingProfile } = await supabaseAdmin
     .from('profiles')
     .select('status, role')
     .eq('id', userId)
@@ -50,9 +52,9 @@ export async function GET(request: Request) {
 
   let profile = existingProfile;
 
-  // 5. Si no existe perfil, crearlo por defecto con estado 'pendiente'
+  // 5. Si no existe perfil, crearlo por defecto con estado 'pendiente' usando el cliente admin
   if (!profile) {
-    const { data: newProfile, error: insertError } = await supabase
+    const { data: newProfile, error: insertError } = await supabaseAdmin
       .from('profiles')
       .insert({
         id: userId,
