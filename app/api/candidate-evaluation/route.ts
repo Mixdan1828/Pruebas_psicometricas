@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const token = (searchParams.get('token') ?? '').trim();
+    const candidate_id = (searchParams.get('candidate_id') ?? '').trim();
 
     if (!token) {
       return NextResponse.json(
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 
     const supabase = createAdminClient();
 
-    const { data: candidateData, error: candidateError } = await supabase
+    let query = supabase
       .from('candidate_results')
       .select(
         `
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
           status,
           test_id,
           link_acceso,
+          candidate_id,
           answers_json,
           tests (
             id,
@@ -47,7 +49,15 @@ export async function GET(request: Request) {
           )
         `
       )
-      .eq('link_acceso', token)
+      .eq('link_acceso', token);
+
+    // Filtrar por el candidato actual para evitar devolver resultados de otros usuarios
+    // que hayan usado el mismo enlace (current_users > 0).
+    if (candidate_id) {
+      query = query.eq('candidate_id', candidate_id);
+    }
+
+    const { data: candidateData, error: candidateError } = await query
       .order('id', { ascending: true });
 
     if (candidateError) {

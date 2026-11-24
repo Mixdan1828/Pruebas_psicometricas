@@ -279,6 +279,11 @@ export default function BienvenidaEvaluacion() {
         throw new Error(payload?.error || 'Error al procesar el registro.');
       }
 
+      // Guardar el ID del candidato creado para aislar sus resultados en el resolver
+      if (payload.candidateId) {
+        localStorage.setItem('candidato_id', String(payload.candidateId));
+      }
+
       const nombreCompleto = `${formData.nombre} ${formData.apellido_paterno} ${formData.apellido_materno || ''}`.trim();
       localStorage.setItem('candidato_nombre', nombreCompleto);
       localStorage.setItem('candidato_apellido_paterno', formData.apellido_paterno);

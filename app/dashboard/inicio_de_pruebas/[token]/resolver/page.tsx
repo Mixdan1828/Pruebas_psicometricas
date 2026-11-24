@@ -93,7 +93,18 @@ export default function ResolverOrchestrator() {
     }
 
     try {
-      const res = await fetch(`/api/candidate-evaluation?token=${encodeURIComponent(token)}`);
+      // Recuperar el ID del candidato registrado en este navegador para aislar sus resultados
+      const candidatoId = typeof localStorage !== 'undefined'
+        ? localStorage.getItem('candidato_id')
+        : null;
+
+      const urlParams = new URLSearchParams();
+      urlParams.set('token', token);
+      if (candidatoId) {
+        urlParams.set('candidate_id', candidatoId);
+      }
+
+      const res = await fetch(`/api/candidate-evaluation?${urlParams.toString()}`);
       const payload = await res.json().catch(() => ({}));
 
       if (!res.ok) {
