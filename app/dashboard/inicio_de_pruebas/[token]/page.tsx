@@ -4,11 +4,6 @@ import React, { useState, useCallback, useEffect, memo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
-  Play,
-  VolumeX,
-  Eye,
-  Heart,
-  Clock,
   ArrowRight,
   AlertCircle,
   UserCheck,
@@ -26,7 +21,6 @@ import {
 } from './types';
 
 interface DemographicsFormProps {
-  onClose: () => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   formData: FormData;
   handleInputChange: (
@@ -39,7 +33,6 @@ interface DemographicsFormProps {
 }
 
 const DemographicsForm = memo(function DemographicsForm({
-  onClose,
   onSubmit,
   formData,
   handleInputChange,
@@ -49,8 +42,7 @@ const DemographicsForm = memo(function DemographicsForm({
   setTerminosAceptados,
 }: DemographicsFormProps) {
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-8 shadow-2xl space-y-6 border border-slate-100 max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl p-8 shadow-2xl space-y-6 border border-slate-100 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div>
             <span className="inline-block bg-[#beee89] text-[#123440] text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full mb-1">
@@ -162,16 +154,12 @@ const DemographicsForm = memo(function DemographicsForm({
             </label>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="w-1/3 py-3 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer">
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading} className="w-2/3 py-3 bg-gradient-to-r from-[#123440] to-[#0E6433] text-white rounded-xl text-xs font-bold hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
-              {loading ? 'Registrando...' : 'Confirmar e Ir al Paso 2'}
+          <div className="pt-4">
+            <button type="submit" disabled={loading} className="w-full py-3 bg-gradient-to-r from-[#123440] to-[#0E6433] text-white rounded-xl text-xs font-bold hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer">
+              {loading ? 'Registrando...' : 'Confirmar e Iniciar Evaluaciones'}
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 });
@@ -181,7 +169,6 @@ export default function BienvenidaEvaluacion() {
   const params = useParams();
   const token = params?.token as string;
 
-  const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingToken, setCheckingToken] = useState(true);
   const [linkInfo, setLinkInfo] = useState<LinkData | null>(null);
@@ -253,6 +240,22 @@ export default function BienvenidaEvaluacion() {
     validateTokenOnLoad();
   }, [token]);
 
+  // Limpieza de localStorage si el token cambió
+  // Evita que un candidate_id de una liga previa contamine la consulta a la API
+  useEffect(() => {
+    if (typeof localStorage === 'undefined' || !token) return;
+    const tokenGuardado = localStorage.getItem('token_actual');
+    if (tokenGuardado && tokenGuardado !== token) {
+      localStorage.removeItem('candidato_id');
+      localStorage.removeItem('candidato_nombre');
+      localStorage.removeItem('candidato_apellido_paterno');
+      localStorage.removeItem('candidato_apellido_materno');
+      localStorage.removeItem('token_actual');
+      const watchedKey = 'videos_instructions_watched_' + token;
+      localStorage.removeItem(watchedKey);
+    }
+  }, [token]);
+
   const loadCandidateTests = useCallback(async () => {
     if (!token) return;
 
@@ -262,9 +265,6 @@ export default function BienvenidaEvaluacion() {
     try {
       const urlParams = new URLSearchParams();
       urlParams.set('token', token);
-      if (candidateId) {
-        urlParams.set('candidate_id', candidateId);
-      }
 
       const res = await fetch(`/api/candidate-evaluation?${urlParams.toString()}`);
       const payload = await res.json().catch(() => ({}));
@@ -280,7 +280,7 @@ export default function BienvenidaEvaluacion() {
     } finally {
       setCandidateTestsLoading(false);
     }
-  }, [token, candidateId]);
+  }, [token]);
 
   useEffect(() => {
     loadCandidateTests();
@@ -377,7 +377,7 @@ export default function BienvenidaEvaluacion() {
     } finally {
       setLoading(false);
     }
-  }, [formData, linkInfo, token, terminosAceptados, setPhase]);
+  }, [formData, linkInfo, token, terminosAceptados]);
 
   /* ------------------------------------------------------------------ */
   /*  Render condicional por fase                                       */
@@ -510,31 +510,22 @@ export default function BienvenidaEvaluacion() {
                 <p className="text-sm text-slate-600">
                   Todos los campos son obligatorios por requerimiento institucional.
                 </p>
-
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="w-full py-4 bg-[#123440] text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#001e28] transition-all shadow-lg shadow-[#123440]/10 cursor-pointer"
-                >
-                  <span>Completar Registro</span>
-                  <ArrowRight size={18} />
-                </button>
               </div>
             </aside>
+
+            <div className="lg:col-span-8 mt-8 lg:mt-0 space-y-6">
+              <DemographicsForm
+                onSubmit={handleStartTest}
+                formData={formData}
+                handleInputChange={handleInputChange}
+                loading={loading}
+                errorMessage={errorMessage}
+                terminosAceptados={terminosAceptados}
+                setTerminosAceptados={setTerminosAceptados}
+              />
+            </div>
           </section>
         </main>
-
-        {showModal && (
-          <DemographicsForm
-            onClose={() => setShowModal(false)}
-            onSubmit={handleStartTest}
-            formData={formData}
-            handleInputChange={handleInputChange}
-            loading={loading}
-            errorMessage={errorMessage}
-            terminosAceptados={terminosAceptados}
-            setTerminosAceptados={setTerminosAceptados}
-          />
-        )}
       </div>
     );
   }
@@ -560,5 +551,6 @@ export default function BienvenidaEvaluacion() {
 
   return null;
 }
+
 
 
