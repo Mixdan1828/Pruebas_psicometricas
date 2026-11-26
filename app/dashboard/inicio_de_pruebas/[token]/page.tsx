@@ -886,6 +886,7 @@ export default function BienvenidaEvaluacion() {
       }
 
       try {
+        // Validar enlace
         const res = await fetch(`/api/candidate-link?token=${encodeURIComponent(token)}`);
         const payload = await res.json().catch(() => ({}));
 
@@ -988,6 +989,9 @@ export default function BienvenidaEvaluacion() {
     [formData, linkInfo, token, terminosAceptados]
   );
 
+  /* ------------------------------------------------------------------ */
+  /* Pantalla de carga / error                                          */
+  /* ------------------------------------------------------------------ */
   if (checkingToken) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fcf9f8] text-[#123440]">
@@ -1008,6 +1012,9 @@ export default function BienvenidaEvaluacion() {
     );
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Layout principal                                                   */
+  /* ------------------------------------------------------------------ */
   return (
     <div className="bg-[#fcf9f8] text-[#1c1b1c] flex flex-col min-h-screen font-sans antialiased">
       <header className="fixed top-0 w-full z-40 bg-[#f9f9f7]/80 backdrop-blur-md border-b border-slate-100">
