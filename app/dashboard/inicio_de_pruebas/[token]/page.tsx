@@ -799,7 +799,6 @@ function ExamManager({ token, candidateId }: { token: string; candidateId: strin
       <TestFinalizedView
         testNames={completedTestsNames}
         onGoHome={() => {
-          // Limpiamos los datos del localStorage al salir de la evaluación finalizada
           localStorage.removeItem('candidato_id');
           localStorage.removeItem('candidato_nombre');
           localStorage.removeItem('candidato_apellido_paterno');
@@ -809,7 +808,6 @@ function ExamManager({ token, candidateId }: { token: string; candidateId: strin
         }}
       />
     );
-  }
   }
 
   return (
@@ -874,7 +872,6 @@ export default function BienvenidaEvaluacion() {
 
   useEffect(() => {
     const init = async () => {
-      // Si ya hay candidato registrado, saltar videos e ir directo a exámenes
       const existingCandidateId = localStorage.getItem('candidato_id');
       if (existingCandidateId) {
         setPhase('exams');
@@ -899,7 +896,6 @@ export default function BienvenidaEvaluacion() {
 
         setLinkInfo(payload.link as LinkData);
 
-        // Obtener videos de pruebas asociadas al enlace
         const videosRes = await fetch(`/api/link-tests?token=${encodeURIComponent(token)}`);
         const videosPayload = await videosRes.json().catch(() => ({}));
 
@@ -909,7 +905,6 @@ export default function BienvenidaEvaluacion() {
 
         const linkTests: TestVideoRow[] = videosPayload.link_tests || [];
 
-        // Construir playlist: Intro -> videos de pruebas (step_order ASC) -> Outro
         const videoUrls: string[] = [VIDEO_INTRO];
         linkTests.forEach((vt) => {
           if (vt.tests?.video_url) {
@@ -929,16 +924,10 @@ export default function BienvenidaEvaluacion() {
     init();
   }, [token]);
 
-  /* ------------------------------------------------------------------ */
-  /* Callback cuando terminan todos los videos                          */
-  /* ------------------------------------------------------------------ */
   const handleVideosComplete = useCallback(() => {
     setVideosCompleted(true);
   }, []);
 
-  /* ------------------------------------------------------------------ */
-  /* Manejo del registro de candidato                                   */
-  /* ------------------------------------------------------------------ */
   const handleStartTest = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -978,7 +967,6 @@ export default function BienvenidaEvaluacion() {
           throw new Error(payload?.error || 'Error al procesar el registro.');
         }
 
-        // Guardar ID del candidato en localStorage
         if (payload.candidateId) {
           localStorage.setItem('candidato_id', String(payload.candidateId));
         }
@@ -1090,9 +1078,6 @@ export default function BienvenidaEvaluacion() {
       </header>
 
       <main className="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full">
-        {/* ========================================================================
-           FASE 1: VIDEOS
-           ======================================================================== */}
         {phase === 'videos' && playlist.length > 0 && (
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-8 space-y-8">
@@ -1161,9 +1146,6 @@ export default function BienvenidaEvaluacion() {
           </section>
         )}
 
-        {/* ========================================================================
-           FASE 2: REGISTRO
-           ======================================================================== */}
         {phase === 'registration' && (
           <div className="max-w-lg mx-auto">
             {showRegistrationModal && (
@@ -1202,9 +1184,6 @@ export default function BienvenidaEvaluacion() {
           </div>
         )}
 
-        {/* ========================================================================
-           FASE 3: EXÁMENES (inline)
-           ======================================================================== */}
         {phase === 'exams' && (
           <ExamManager
             token={token}
@@ -1213,7 +1192,6 @@ export default function BienvenidaEvaluacion() {
         )}
       </main>
 
-      {/* Toast de error para registro */}
       {phase === 'registration' && errorMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 shadow-lg z-50">
           {errorMessage}
