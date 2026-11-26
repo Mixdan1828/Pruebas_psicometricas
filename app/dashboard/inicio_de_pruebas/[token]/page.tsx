@@ -1,45 +1,37 @@
-// app/dashboard/inicio_de_pruebas/[token]/page.tsx (o tu ruta actual)
-"use client";
+'use client';
 
 import React, { useState, useCallback, useEffect, memo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
-  Play, 
-  VolumeX, 
-  Eye, 
-  Heart, 
-  Clock, 
-  ArrowRight, 
+  Play,
+  VolumeX,
+  Eye,
+  Heart,
+  Clock,
+  ArrowRight,
   AlertCircle,
   UserCheck,
-  FileText
+  FileText,
 } from 'lucide-react';
-
-interface FormData {
-  nombre: string;
-  apellido_paterno: string;
-  apellido_materno: string;
-  edad: string;
-  genero: string;
-  sede: string;
-  estado_civil: string;
-  escolaridad: string;
-  Fecha_Nacimiento: string;
-}
-
-interface LinkData {
-  id: string;
-  token: string;
-  max_users: number;
-  current_users: number | null;
-}
+import { VideoInstructionsPlayer } from './VideoInstructionsPlayer';
+import TestManager from '../tests/TestManager';
+import { useVideoInstructions } from './use-video-instructions';
+import {
+  CandidateTest,
+  LinkData,
+  FormData,
+  VideoInstructionPhase,
+  AssignedTest,
+} from './types';
 
 interface DemographicsFormProps {
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   formData: FormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   loading: boolean;
   errorMessage: string;
   terminosAceptados: boolean;
@@ -213,6 +205,27 @@ export default function BienvenidaEvaluacion() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Datos del candidato almacenados en localStorage (registro previo)
+  const candidateId =
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('candidato_id')
+      : null;
+  const patientName =
+    typeof localStorage !== 'undefined'
+      ? localStorage.getItem('candidato_nombre')
+      : null;
+
+  // --- Estado de videos (extraído a hook custom para SRP) ---
+  const { hasWatchedInstructions, markAsWatched } = useVideoInstructions(token);
+
+  // --- Fases de navegación del flujo ---
+  const [phase, setPhase] = useState<VideoInstructionPhase>('checking');
+
+  // --- Pruebas asignadas (candidateTests) ---
+  const [candidateTests, setCandidateTests] = useState<CandidateTest[]>([]);
+  const [candidateTestsLoading, setCandidateTestsLoading] = useState(false);
+  const [candidateTestsError, setCandidateTestsError] = useState('');
+
   useEffect(() => {
     const validateTokenOnLoad = async () => {
       if (!token) {
@@ -239,6 +252,53 @@ export default function BienvenidaEvaluacion() {
 
     validateTokenOnLoad();
   }, [token]);
+
+  const loadCandidateTests = useCallback(async () => {
+    if (!token) return;
+
+    setCandidateTestsLoading(true);
+    setCandidateTestsError('');
+
+    try {
+      const urlParams = new URLSearchParams();
+      urlParams.set('token', token);
+      if (candidateId) {
+        urlParams.set('candidate_id', candidateId);
+      }
+
+      const res = await fetch(`/api/candidate-evaluation?${urlParams.toString()}`);
+      const payload = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(payload?.error || 'No se pudieron cargar las pruebas asignadas.');
+      }
+
+      setCandidateTests((payload.tests as CandidateTest[]) || []);
+    } catch (err: any) {
+      setCandidateTestsError(err.message);
+      console.error('[BienvenidaEvaluacion] Error cargando pruebas:', err);
+    } finally {
+      setCandidateTestsLoading(false);
+    }
+  }, [token, candidateId]);
+
+  useEffect(() => {
+    loadCandidateTests();
+  }, [loadCandidateTests]);
+
+  const assignedTests: AssignedTest[] = React.useMemo(() => {
+    return candidateTests
+      .filter((item) => item.tests !== null)
+      .map((item) => ({
+        test_id: item.tests!.id,
+        name: item.tests!.name,
+      }));
+  }, [candidateTests]);
+
+  const handleVideosComplete = useCallback(() => {
+    markAsWatched();
+    setPhase(candidateId ? 'exams' : 'registration');
+  }, [markAsWatched, candidateId]);
 
   const handleStartTest = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,7 +339,7 @@ export default function BienvenidaEvaluacion() {
         throw new Error(payload?.error || 'Error al procesar el registro.');
       }
 
-      // Guardar el ID del candidato creado para aislar sus resultados en el resolver
+      // Guardar el ID del candidato creado para aislar sus resultados
       if (payload.candidateId) {
         localStorage.setItem('candidato_id', String(payload.candidateId));
       }
@@ -290,15 +350,19 @@ export default function BienvenidaEvaluacion() {
       localStorage.setItem('candidato_apellido_materno', formData.apellido_materno);
       localStorage.setItem('token_actual', token);
 
-      router.push(`/dashboard/inicio_de_pruebas/${token}/resolver`);
-
+      // Transicionar a la fase de exámenes (mostrar TestManager en esta página)
+      setPhase('exams');
     } catch (error: any) {
       setErrorMessage(error.message || 'Error al procesar el registro.');
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, [formData, linkInfo, token, router, terminosAceptados]);
+  }, [formData, linkInfo, token, terminosAceptados, setPhase]);
+
+  /* ------------------------------------------------------------------ */
+  /*  Render condicional por fase                                       */
+  /* ------------------------------------------------------------------ */
 
   if (checkingToken) {
     return (
@@ -320,123 +384,161 @@ export default function BienvenidaEvaluacion() {
     );
   }
 
-  return (
-    <div className="bg-[#fcf9f8] text-[#1c1b1c] flex flex-col min-h-screen font-sans antialiased">
-      <header className="fixed top-0 w-full z-40 bg-[#f9f9f7]/80 backdrop-blur-md border-b border-slate-100">
-        <div className="flex justify-between items-center px-6 py-4 w-full max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-36 rounded flex items-center justify-center text-xs font-bold text-slate-400">
-              <Image
-                src="/images/miLogo.png" 
-                alt="Logo" 
-                width={280}
-                height={85}
-                priority
-                className="object-contain h-full w-auto max-h-[75px] md:max-h-[85px] md:w-[280px]"
-              />
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#123440] text-white flex items-center justify-center text-xs font-bold">1</div>
-              <span className="text-xs font-bold text-[#123440]">Paso 1: Instrucciones y Registro</span>
-            </div>
-            <div className="w-8 h-[2px] bg-slate-200"></div>
-            <div className="flex items-center gap-2 opacity-40">
-              <div className="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold">2</div>
-              <span className="text-xs font-medium text-slate-500">Paso 2: Resolución</span>
-            </div>
-          </div>
-
-          <div className="flex gap-8">
-            <a className="text-[#416912] font-bold border-b-2 border-[#416912] pb-1 text-sm" href="#">Bienvenida</a>
-            <a className="text-[#123440] opacity-70 text-sm" href="#">Ayuda</a>
-          </div>
+  // Sin pruebas asignadas
+  if (
+    !candidateTestsLoading &&
+    !candidateTestsError &&
+    candidateTests.length === 0
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fcf9f8] p-6">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 max-w-md w-full text-center space-y-4 shadow-sm">
+          <AlertCircle size={48} className="text-amber-500 mx-auto" />
+          <h2 className="text-xl font-bold text-[#123440]">Sin pruebas asignadas</h2>
+          <p className="text-xs text-slate-600">
+            Este enlace no tiene pruebas vinculadas o ya fueron todas completadas.
+          </p>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <main className="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full">
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          <div className="lg:col-span-8 space-y-8">
-            <div className="space-y-4">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#beee89]/40 text-[#123440] text-xs font-extrabold uppercase tracking-wide">
-                <FileText size={14} /> Paso 1: Introducción y Datos
-              </span>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-[#123440] tracking-tight">
-                Bienvenido a tu Evaluación Digital
-              </h1>
-              <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
-                Por favor, tómate un momento para ver este breve video tutorial antes de comenzar la prueba.
-              </p>
+  if (candidateTestsError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fcf9f8] p-6">
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 max-w-md w-full text-center space-y-4 shadow-sm">
+          <AlertCircle size={48} className="text-red-500 mx-auto" />
+          <h2 className="text-xl font-bold text-[#123440]">Error al cargar pruebas</h2>
+          <p className="text-xs text-slate-600">{candidateTestsError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* Fase: VIDEOS — reproducción obligatoria antes de continuar */
+  if (phase === 'videos' && !hasWatchedInstructions) {
+    return (
+      <div className="min-h-screen bg-[#fcf9f8]">
+        <VideoInstructionsPlayer
+          assignedTests={assignedTests}
+          onCompleteAllVideos={handleVideosComplete}
+        />
+      </div>
+    );
+  }
+
+  /* Fase: REGISTRO — formulario de datos del candidato */
+  if (phase === 'registration') {
+    return (
+      <div className="bg-[#fcf9f8] text-[#1c1b1c] flex flex-col min-h-screen font-sans antialiased">
+        <header className="fixed top-0 w-full z-40 bg-[#f9f9f7]/80 backdrop-blur-md border-b border-slate-100">
+          <div className="flex justify-between items-center px-6 py-4 w-full max-w-7xl mx-auto">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-36 rounded flex items-center justify-center text-xs font-bold text-slate-400">
+                <Image
+                  src="/images/miLogo.png"
+                  alt="Logo"
+                  width={280}
+                  height={85}
+                  priority
+                  className="object-contain h-full w-auto max-h-[75px] md:max-h-[85px] md:w-[280px]"
+                />
+              </div>
             </div>
 
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-[#123440] shadow-xl group cursor-pointer">
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <div className="bg-[#beee89] text-[#123440] p-5 rounded-full shadow-lg transform group-hover:scale-110 transition-all">
-                  <Play size={32} fill="#123440" />
+            <div className="hidden md:flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-[#123440] text-white flex items-center justify-center text-xs font-bold">
+                  1
                 </div>
+                <span className="text-xs font-bold text-[#123440]">Paso 1: Registro de Datos</span>
               </div>
-              <div className="absolute bottom-6 left-6 right-6 flex items-center gap-4">
-                <div className="h-1 bg-white/30 flex-grow rounded-full overflow-hidden">
-                  <div className="h-full bg-[#beee89] w-1/3"></div>
+              <div className="w-8 h-[2px] bg-slate-200"></div>
+              <div className="flex items-center gap-2 opacity-40">
+                <div className="w-7 h-7 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center text-xs font-bold">
+                  2
                 </div>
-                <span className="text-white text-xs font-mono">01:15 / 03:45</span>
+                <span className="text-xs font-medium text-slate-500">Paso 2: Resolución</span>
               </div>
+            </div>
+
+            <div className="flex gap-8">
+              <a className="text-[#416912] font-bold border-b-2 border-[#416912] pb-1 text-sm" href="#">Bienvenida</a>
+              <a className="text-[#123440] opacity-70 text-sm" href="#">Ayuda</a>
             </div>
           </div>
+        </header>
 
-          <aside className="lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm space-y-6">
-              <h2 className="text-lg font-bold text-[#123440]">Instrucciones Claras</h2>
-              
-              <ul className="space-y-4">
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <VolumeX className="text-[#416912] flex-shrink-0" size={20} />
-                  <span>Asegúrate de estar en un lugar tranquilo.</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <Eye className="text-[#416912] flex-shrink-0" size={20} />
-                  <span>Lee cada pregunta con atención.</span>
-                </li>
-                <li className="flex gap-3 text-sm text-slate-600">
-                  <Heart className="text-[#416912] flex-shrink-0" size={20} />
-                  <span>Responde con total sinceridad.</span>
-                </li>
-              </ul>
-
-              <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
-                <Clock className="text-[#123440]" size={24} />
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Duración estimada</p>
-                  <p className="text-base font-extrabold text-[#123440]">25 Minutos</p>
-                </div>
+        <main className="flex-grow pt-32 pb-20 px-6 max-w-7xl mx-auto w-full">
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <div className="lg:col-span-8 space-y-8">
+              <div className="space-y-4">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#beee89]/40 text-[#123440] text-xs font-extrabold uppercase tracking-wide">
+                  <FileText size={14} /> Paso 1: Datos del Candidato
+                </span>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-[#123440] tracking-tight">
+                  Registro Obligatorio
+                </h1>
+                <p className="text-base text-slate-600 leading-relaxed max-w-3xl">
+                  Ya viste los videos de instrucciones. Ahora completa tus datos para iniciar las evaluaciones.
+                </p>
               </div>
-
-              <button 
-                onClick={() => setShowModal(true)}
-                className="w-full py-4 bg-[#123440] text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#001e28] transition-all shadow-lg shadow-[#123440]/10 cursor-pointer"
-              >
-                <span>Completar Paso 1 (Registro)</span>
-                <ArrowRight size={18} />
-              </button>
             </div>
-          </aside>
-        </section>
-      </main>
 
-      {showModal && (
-        <DemographicsForm
-          onClose={() => setShowModal(false)}
-          onSubmit={handleStartTest}
-          formData={formData}
-          handleInputChange={handleInputChange}
-          loading={loading}
-          errorMessage={errorMessage}
-          terminosAceptados={terminosAceptados}
-          setTerminosAceptados={setTerminosAceptados}
-        />
-      )}
-    </div>
-  );
+            <aside className="lg:col-span-4 space-y-6">
+              <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm space-y-6">
+                <h2 className="text-lg font-bold text-[#123440]">Información requerida</h2>
+                <p className="text-sm text-slate-600">
+                  Todos los campos son obligatorios por requerimiento institucional.
+                </p>
+
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="w-full py-4 bg-[#123440] text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-[#001e28] transition-all shadow-lg shadow-[#123440]/10 cursor-pointer"
+                >
+                  <span>Completar Registro</span>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+            </aside>
+          </section>
+        </main>
+
+        {showModal && (
+          <DemographicsForm
+            onClose={() => setShowModal(false)}
+            onSubmit={handleStartTest}
+            formData={formData}
+            handleInputChange={handleInputChange}
+            loading={loading}
+            errorMessage={errorMessage}
+            terminosAceptados={terminosAceptados}
+            setTerminosAceptados={setTerminosAceptados}
+          />
+        )}
+      </div>
+    );
+  }
+
+  /* Fase: EXÁMENES — mostrar panel de pruebas (TestManager) */
+  if (phase === 'exams') {
+    const testsList = candidateTests
+      .filter((item): item is CandidateTest & { tests: NonNullable<CandidateTest["tests"]> } => item.tests !== null)
+      .map((item) => ({
+        ...item,
+        id: item.tests.id,
+        name: item.tests.name,
+        type: item.tests.type,
+        test_questions: item.tests.test_questions,
+      }));
+
+    return (
+      <div className="min-h-screen bg-[#F9F9F7]">
+        <TestManager patientName={patientName ?? 'Candidato'} testsList={testsList} />
+      </div>
+    );
+  }
+
+  return null;
 }
+
