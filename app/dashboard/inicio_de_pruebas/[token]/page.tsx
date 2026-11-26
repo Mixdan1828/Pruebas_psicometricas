@@ -69,7 +69,7 @@ export default function BienvenidaEvaluacion() {
       }
 
       try {
-        // Limpiar sesión anterior si el token cambió
+        // 1. Limpiar datos previos si el token de la URL es diferente al almacenado
         const savedToken = localStorage.getItem('token_actual');
         if (savedToken && savedToken !== token) {
           localStorage.removeItem('candidato_id');
@@ -79,6 +79,7 @@ export default function BienvenidaEvaluacion() {
           localStorage.removeItem('token_actual');
         }
 
+        // 2. Validar enlace en la API
         const res = await fetch(`/api/candidate-link?token=${encodeURIComponent(token)}`);
         const payload = await res.json().catch(() => ({}));
 
@@ -88,6 +89,7 @@ export default function BienvenidaEvaluacion() {
 
         setLinkInfo(payload.link as LinkData);
 
+        // 3. Revisar si ya existe un registro de candidato válido para este token
         const existingCandidateId = localStorage.getItem('candidato_id');
         if (existingCandidateId) {
           setPhase('exams');
@@ -95,6 +97,7 @@ export default function BienvenidaEvaluacion() {
           return;
         }
 
+        // 4. Cargar videos de la evaluación
         const videosRes = await fetch(`/api/link-tests?token=${encodeURIComponent(token)}`);
         const videosPayload = await videosRes.json().catch(() => ({}));
 
