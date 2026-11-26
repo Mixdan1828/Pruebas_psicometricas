@@ -793,25 +793,23 @@ function ExamManager({ token, candidateId }: { token: string; candidateId: strin
   if (phase === 'finished') {
     const completedTestsNames = candidateTests
       .map((t) => t?.tests?.name)
-      .filter(Boolean)
-      .join(', ');
+      .filter(Boolean);
 
     return (
-      <div className="min-h-screen bg-[#fcf9f8] flex flex-col items-center justify-center p-6 text-center">
-        <UserCheck size={64} className="text-[#416912] mb-6" />
-        <h2 className="text-2xl font-bold text-[#123440] mb-4">¡Evaluación Completada!</h2>
-        <p className="text-sm text-slate-600 max-w-md mb-6">
-          Has terminado todas las pruebas asignadas. Gracias por tu participación.
-        </p>
-        <p className="text-xs text-slate-500 mb-8">Pruebas: {completedTestsNames}</p>
-        <button
-          onClick={() => (window.location.href = '/')}
-          className="px-8 py-3 bg-[#123440] text-white rounded-xl font-bold hover:bg-[#001e28] transition-all cursor-pointer"
-        >
-          Volver al inicio
-        </button>
-      </div>
+      <TestFinalizedView
+        testNames={completedTestsNames}
+        onGoHome={() => {
+          // Limpiamos los datos del localStorage al salir de la evaluación finalizada
+          localStorage.removeItem('candidato_id');
+          localStorage.removeItem('candidato_nombre');
+          localStorage.removeItem('candidato_apellido_paterno');
+          localStorage.removeItem('candidato_apellido_materno');
+          localStorage.removeItem('token_actual');
+          window.location.href = '/';
+        }}
+      />
     );
+  }
   }
 
   return (
