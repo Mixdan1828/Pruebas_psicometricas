@@ -286,6 +286,25 @@ export default function BienvenidaEvaluacion() {
     loadCandidateTests();
   }, [loadCandidateTests]);
 
+  // ------------------------------------------------------------------
+  // Transición de fase después de cargar las pruebas asignadas.
+  // Resuelve el deadlock donde phase se queda en 'checking' y el
+  // componente retorna null sin mostrar nada al usuario.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    if (candidateTestsLoading) return;
+
+    if (candidateTests.length > 0) {
+      if (!hasWatchedInstructions) {
+        setPhase('videos');
+      } else if (candidateId) {
+        setPhase('exams');
+      } else {
+        setPhase('registration');
+      }
+    }
+  }, [candidateTests, candidateTestsLoading, hasWatchedInstructions, candidateId]);
+
   const assignedTests: AssignedTest[] = React.useMemo(() => {
     return candidateTests
       .filter((item) => item.tests !== null)
@@ -541,4 +560,5 @@ export default function BienvenidaEvaluacion() {
 
   return null;
 }
+
 
