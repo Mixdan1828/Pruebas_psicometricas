@@ -5,9 +5,9 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { FileText, Clock, ArrowRight, AlertCircle, VolumeX, Eye, Heart } from 'lucide-react';
-import { VideoPlaylistPlayer, VIDEO_INTRO, VIDEO_OUTRO } from './components/VideoPlaylistPlayer';
-import { DemographicsForm, FormData } from './components/DemographicsForm';
-import { ExamManager } from './components/ExamManager';
+import { VideoPlaylistPlayer, VIDEO_INTRO, VIDEO_OUTRO } from './componentes/VideoPlaylistPlayer';
+import { DemographicsForm, FormData } from './componentes/DemographicsForm';
+import { ExamManager } from './componentes/ExamManager';
 
 interface LinkData {
   id: string;
